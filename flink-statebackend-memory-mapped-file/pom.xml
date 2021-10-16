@@ -26,7 +26,7 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.flink</groupId>
-		<artifactId>flink-state-backends</artifactId>
+		<artifactId>redpanda-state-backend-for-flink</artifactId>
 		<version>1.10.3</version>
 		<relativePath>..</relativePath>
 	</parent>
