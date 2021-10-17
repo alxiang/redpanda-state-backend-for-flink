@@ -16,9 +16,9 @@ import org.apache.commons.lang3.NotImplementedException;
 import java.io.IOException;
 
 /**
- * Base class for {@link State} implementations that store state in Redpanda streams.
+ * Base class for {@link State} implementations that store state in a RocksDB database.
  *
- * <p>State is not stored in this class but in the (ChronicleMap) instance that the {@link
+ * <p>State is not stored in this class but in the ChronicleMap instance that the {@link
  * RedpandaKeyedStateBackend} manages and checkpoints.
  *
  * @param <K> The type of the key.
@@ -38,7 +38,7 @@ public abstract class AbstractRedpandaState<K, N, V>
     /** The current namespace, which the next value methods will refer to. */
     private N currentNamespace;
 
-    /** Backend that holds the actual Redpanda instance where we store state. */
+    /** Backend that holds the actual RocksDB instance where we store state. */
     protected RedpandaKeyedStateBackend<K> backend;
 
     //    /** The column family of this particular instance of state. */
@@ -83,94 +83,94 @@ public abstract class AbstractRedpandaState<K, N, V>
     }
 
     // ------------------------------------------------------------------------
-    // @Override
-    // public void clear() {
-    //     try {
-    //         // Get the current Key
-    //         byte[] serializedKeyAndNamespace =
-    //                 sharedKeyNamespaceSerializer.buildCompositeKeyNamespace(
-    //                         currentNamespace, namespaceSerializer);
-    //         Tuple2<K, N> keyAndNamespace =
-    //                 KvStateSerializer.deserializeKeyAndNamespace(
-    //                         serializedKeyAndNamespace, keySerializer, namespaceSerializer);
-    //         K key = keyAndNamespace.f0;
-    //         String stateName = backend.stateToStateName.get(this);
+    @Override
+    public void clear() {
+        try {
+            // Get the current Key
+            byte[] serializedKeyAndNamespace =
+                    sharedKeyNamespaceSerializer.buildCompositeKeyNamespace(
+                            currentNamespace, namespaceSerializer);
+            Tuple2<K, N> keyAndNamespace =
+                    KvStateSerializer.deserializeKeyAndNamespace(
+                            serializedKeyAndNamespace, keySerializer, namespaceSerializer);
+            K key = keyAndNamespace.f0;
+            String stateName = backend.stateToStateName.get(this);
 
-    //         // Update Data Structures
-    //         backend.namespaceAndStateNameToKeys
-    //                 .get(new Tuple2<N, String>(currentNamespace, stateName))
-    //                 .remove(key);
-    //         backend.namespaceKeyStateNameToState.remove(
-    //                 new Tuple3<N, String, K>(currentNamespace, stateName, key));
-    //         backend.stateNamesToKeysAndNamespaces
-    //                 .get(stateName)
-    //                 .remove(new Tuple2<K, N>(key, currentNamespace));
-    //     } catch (IOException e) {
-    //         throw new NotImplementedException("TODO", e);
-    //     }
-    // }
+            // Update Data Structures
+            backend.namespaceAndStateNameToKeys
+                    .get(new Tuple2<N, String>(currentNamespace, stateName))
+                    .remove(key);
+            backend.namespaceKeyStateNameToState.remove(
+                    new Tuple3<N, String, K>(currentNamespace, stateName, key));
+            backend.stateNamesToKeysAndNamespaces
+                    .get(stateName)
+                    .remove(new Tuple2<K, N>(key, currentNamespace));
+        } catch (IOException e) {
+            throw new NotImplementedException("TODO", e);
+        }
+    }
 
-    // public Tuple2<K, N> deserializeKeyAndNamespace(byte[] serializedKeyAndNamespace)
-    //         throws Exception {
-    //     return KvStateSerializer.deserializeKeyAndNamespace(
-    //             serializedKeyAndNamespace, keySerializer, namespaceSerializer);
-    // }
+    public Tuple2<K, N> deserializeKeyAndNamespace(byte[] serializedKeyAndNamespace)
+            throws Exception {
+        return KvStateSerializer.deserializeKeyAndNamespace(
+                serializedKeyAndNamespace, keySerializer, namespaceSerializer);
+    }
 
-    // @Override
-    // public void setCurrentNamespace(N namespace) {
-    //     this.currentNamespace = namespace;
-    // }
+    @Override
+    public void setCurrentNamespace(N namespace) {
+        this.currentNamespace = namespace;
+    }
 
-    // public N getCurrentNamespace() {
-    //     return currentNamespace;
-    // }
+    public N getCurrentNamespace() {
+        return currentNamespace;
+    }
 
-    // public SerializedCompositeKeyBuilder<K> getSharedKeyNamespaceSerializer() {
-    //     return sharedKeyNamespaceSerializer;
-    // }
+    public SerializedCompositeKeyBuilder<K> getSharedKeyNamespaceSerializer() {
+        return sharedKeyNamespaceSerializer;
+    }
 
-    // public V getDefaultValue() {
-    //     return defaultValue;
-    // }
+    public V getDefaultValue() {
+        return defaultValue;
+    }
 
-    // byte[] serializeCurrentKeyWithGroupAndNamespace() {
-    //     return sharedKeyNamespaceSerializer.buildCompositeKeyNamespace(
-    //             currentNamespace, namespaceSerializer);
-    // }
+    byte[] serializeCurrentKeyWithGroupAndNamespace() {
+        return sharedKeyNamespaceSerializer.buildCompositeKeyNamespace(
+                currentNamespace, namespaceSerializer);
+    }
 
-    // public byte[] serializeValue(V value) throws Exception {
-    //     return serializeValue(value, valueSerializer);
-    // }
+    public byte[] serializeValue(V value) throws Exception {
+        return serializeValue(value, valueSerializer);
+    }
 
-    // public byte[] serializeValue(V value, TypeSerializer<V> safeValueSerializer) throws Exception {
-    //     dataOutputView.clear();
-    //     safeValueSerializer.serialize(value, dataOutputView);
-    //     return dataOutputView.getCopyOfBuffer();
-    // }
+    public byte[] serializeValue(V value, TypeSerializer<V> safeValueSerializer) throws Exception {
+        dataOutputView.clear();
+        safeValueSerializer.serialize(value, dataOutputView);
+        return dataOutputView.getCopyOfBuffer();
+    }
 
-    // byte[] serializeCurrentNamespace() throws Exception {
-    //     return serializeNamespace(currentNamespace, namespaceSerializer);
-    // }
+    byte[] serializeCurrentNamespace() throws Exception {
+        return serializeNamespace(currentNamespace, namespaceSerializer);
+    }
 
-    // public byte[] serializeNamespace(N namespace, TypeSerializer<N> safeValueSerializer)
-    //         throws Exception {
-    //     dataOutputView.clear();
-    //     safeValueSerializer.serialize(namespace, dataOutputView);
-    //     return dataOutputView.getCopyOfBuffer();
-    // }
+    public byte[] serializeNamespace(N namespace, TypeSerializer<N> safeValueSerializer)
+            throws Exception {
+        dataOutputView.clear();
+        safeValueSerializer.serialize(namespace, dataOutputView);
+        return dataOutputView.getCopyOfBuffer();
+    }
 
-    // public Tuple2<byte[], String> getNamespaceKeyStateNameTuple() throws Exception {
-    //     byte[] serializedKeyAndNamespace =
-    //             getSharedKeyNamespaceSerializer()
-    //                     .buildCompositeKeyNamespace(getCurrentNamespace(), namespaceSerializer);
-    //     return new Tuple2<byte[], String>(serializedKeyAndNamespace, getStateName());
-    // }
+    public Tuple2<byte[], String> getNamespaceKeyStateNameTuple() throws Exception {
+        byte[] serializedKeyAndNamespace =
+                getSharedKeyNamespaceSerializer()
+                        .buildCompositeKeyNamespace(getCurrentNamespace(), namespaceSerializer);
+        return new Tuple2<byte[], String>(serializedKeyAndNamespace, getStateName());
+    }
 
-    // public String getStateName() {
-    //     return backend.stateToStateName.get(this);
-    // }
+    public String getStateName() {
+        return backend.stateToStateName.get(this);
+    }
 
-    // byte[] getKeyBytes() {
-    //     return serializeCurrentKeyWithGroupAndNamespace();
-    // }
+    byte[] getKeyBytes() {
+        return serializeCurrentKeyWithGroupAndNamespace();
+    }
 }
