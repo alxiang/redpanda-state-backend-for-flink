@@ -21,9 +21,9 @@ under the License.
 
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>redpanda.producer.example</groupId>
-	<artifactId>redpanda-producer-example</artifactId>
-	<name>redpanda-producer-example</name>
+	<groupId>redpanda.consumer.example</groupId>
+	<artifactId>redpanda-consumer-example</artifactId>
+	<name>redpanda-consumer-example</name>
 	<packaging>jar</packaging>
 	<version>V1.0</version>
 
@@ -69,7 +69,7 @@ under the License.
 					<archive>
 						<manifest>
 						<addClasspath>true</addClasspath>
-						<mainClass>RedpandaProducerExample</mainClass>
+						<mainClass>RedpandaConsumerExample</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>
