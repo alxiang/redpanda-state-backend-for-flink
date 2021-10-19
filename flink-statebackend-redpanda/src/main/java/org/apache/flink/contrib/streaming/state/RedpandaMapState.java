@@ -210,6 +210,7 @@ class RedpandaMapState<K, N, UK, UV> extends AbstractRedpandaState<K, N, Map<UK,
         //        return userValueSerializer.deserialize(dataInputView);
     }
 
+    // TODO: this should produce a record to Redpanda
     @Override
     public void put(UK userkey, UV uservalue) throws Exception {
 
@@ -259,6 +260,7 @@ class RedpandaMapState<K, N, UK, UV> extends AbstractRedpandaState<K, N, Map<UK,
         //        }
     }
 
+    // TODO: this should produce a record to Redpanda
     @Override
     public void putAll(Map<UK, UV> map) throws Exception {
         //        for (Map.Entry<UK, UV> entry : map.entrySet()) {
@@ -305,6 +307,7 @@ class RedpandaMapState<K, N, UK, UV> extends AbstractRedpandaState<K, N, Map<UK,
 
     }
 
+    // TODO: this should produce a record to Redpanda
     @Override
     public void remove(UK userkey) throws Exception {
         Tuple2<byte[], String> namespaceKeyStateNameTuple = getNamespaceKeyStateNameTuple();
@@ -398,6 +401,7 @@ class RedpandaMapState<K, N, UK, UV> extends AbstractRedpandaState<K, N, Map<UK,
     // userKeySerializer);
     //    }
 
+    // TODO: may need to redpandify these??
     public void putCurrentStateKeyInBackend() throws Exception {
         byte[] currentNamespace = serializeCurrentNamespace();
         Tuple2<ByteBuffer, String> tupleForKeys =

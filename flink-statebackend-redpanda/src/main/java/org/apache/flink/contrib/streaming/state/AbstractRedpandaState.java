@@ -38,7 +38,7 @@ public abstract class AbstractRedpandaState<K, N, V>
     /** The current namespace, which the next value methods will refer to. */
     private N currentNamespace;
 
-    /** Backend that holds the actual RocksDB instance where we store state. */
+    /** Backend that holds the actual Redpanda instance where we store state. */
     protected RedpandaKeyedStateBackend<K> backend;
 
     //    /** The column family of this particular instance of state. */
@@ -83,6 +83,7 @@ public abstract class AbstractRedpandaState<K, N, V>
     }
 
     // ------------------------------------------------------------------------
+    // TODO: clear() should produce a record to Redpanda stream
     @Override
     public void clear() {
         try {

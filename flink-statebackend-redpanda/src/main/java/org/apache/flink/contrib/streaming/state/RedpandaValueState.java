@@ -30,6 +30,12 @@ import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
 import org.apache.flink.runtime.state.internal.InternalValueState;
 import org.apache.flink.util.FlinkRuntimeException;
 
+// Redpanda imports
+import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
+import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
+import java.util.Properties;
+
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 
@@ -42,6 +48,9 @@ import java.util.HashSet;
  */
 class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
+
+    private KafkaProducer<Long, V> producer;
+    private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -59,6 +68,42 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             RedpandaKeyedStateBackend<K> backend) {
 
         super(namespaceSerializer, valueSerializer, keySerializer, defaultValue, backend);
+
+        // Create Redpanda producer
+        this.producer = this.createProducer();
+    
+    }
+
+    private KafkaProducer<Long, V> createProducer() {
+        // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                            BOOTSTRAP_SERVERS);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaExampleProducer");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                        LongSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                    StringSerializer.class.getName());
+
+        // TODO: temporary types
+        return new KafkaProducer<Long, V>(props);
+    }
+
+    private boolean writeMessage(String TOPIC, V value) {
+
+        final ProducerRecord<Long, V> record =
+                        new ProducerRecord<Long, V>(TOPIC, 0L, value);
+
+        try {
+            final RecordMetadata metadata = this.producer.send(record).get(); 
+        }
+        catch(Exception e) {
+            return false;
+        }
+        finally {
+            this.producer.flush();
+            return true;
+        }
     }
 
     @Override
@@ -98,6 +143,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         }
     }
 
+    // TODO: this should produce a record to Redpanda
     @Override
     public void update(V value) {
         if (value == null) {
@@ -125,6 +171,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             backend.stateNamesToKeysAndNamespaces
                     .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
                     .add(namespaceKeyStateNameTuple.f0);
+
+            // persist to Redpanda
+            // TODO: need right topic
+            this.writeMessage(namespaceKeyStateNameTuple.f1, value);
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
