@@ -21,19 +21,19 @@ under the License.
 
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>org.apache.flink</groupId>
-		<artifactId>redpanda-state-backend-for-flink</artifactId>
-		<version>1.0-SNAPSHOT</version>
-		<!-- <relativePath>..</relativePath> -->
-	</parent>
-
-	<artifactId>flink-statebackend-redpanda</artifactId>
-	<name>flink-statebackend-redpanda</name>
+	<groupId>flink.kafka.producer</groupId>
+	<artifactId>flink.kafka.producer</artifactId>
+	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<version>${flink.version}</version>
 
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<flink.version>1.13.2</flink.version>
+		<scala.binary.version>2.12</scala.binary.version>
 		<junit.version>4.12</junit.version>
 		<mockito.version>2.21.0</mockito.version>
 		<powermock.version>2.0.4</powermock.version>
@@ -55,12 +55,12 @@ under the License.
 					</executions>
 
 					<configuration>
-						<!-- <archive>
+						<archive>
 							<manifest>
 							<addClasspath>true</addClasspath>
-							<mainClass>RedpandaProducerExample</mainClass>
+							<mainClass>flink.kafka.producer.StreamingJob</mainClass>
 							</manifest>
-						</archive> -->
+						</archive>
 						<descriptorRefs>
 							<descriptorRef>jar-with-dependencies</descriptorRef>
 						</descriptorRefs>
@@ -70,37 +70,13 @@ under the License.
 		</build>
 
 	<dependencies>
-
-		<!-- Kafka integration dependencies-->
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
-			<version>${flink.version}</version>
-			<scope>compile</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>2.13.0</version>
-			<scope>compile</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>2.13.0</version>
-			<scope>compile</scope>
-		</dependency>
-
-
-		<!-- core dependencies-->
+		<!-- core dependencies -->
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-runtime_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
-			<!-- <scope>provided</scope> -->
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -108,6 +84,13 @@ under the License.
 			<artifactId>kafka-clients</artifactId>
 			<version>3.0.0</version>
 			<scope>compile</scope>
+		</dependency>
+
+		<!-- Kafka integration dependencies-->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
+			<version>${flink.version}</version>
 		</dependency>
 
 		<dependency>
@@ -196,3 +179,4 @@ under the License.
 		</dependency>
 	</dependencies>
 </project>
+
