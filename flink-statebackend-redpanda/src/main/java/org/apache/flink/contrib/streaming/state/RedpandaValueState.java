@@ -32,8 +32,11 @@ import org.apache.flink.util.FlinkRuntimeException;
 
 // Redpanda imports
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
+import java.util.Collections;
 import java.util.Properties;
 
 import java.nio.ByteBuffer;
@@ -50,6 +53,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<Long, V> producer;
+    private KafkaProducer<Long, V> consumer;
+    private final static String TOPIC = "twitch_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     /**
@@ -71,7 +76,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Create Redpanda producer
         this.producer = this.createProducer();
-    
+        this.consumer = this.createConsumer();
     }
 
     private KafkaProducer<Long, V> createProducer() {
@@ -89,6 +94,26 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return new KafkaProducer<Long, V>(props);
     }
 
+    private static Consumer<Long, String> createConsumer() {
+        final Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                    BOOTSTRAP_SERVERS);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG,
+                                    "RedpandaExampleConsumer");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                LongDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+  
+        // Create the consumer using props.
+        final Consumer<Long, String> consumer =
+                                    new KafkaConsumer<>(props);
+  
+        // Subscribe to the topic.
+        consumer.subscribe(Collections.singletonList(TOPIC));
+        return consumer;
+    }
+
     private boolean writeMessage(String TOPIC, V value) {
 
         final ProducerRecord<Long, V> record =
@@ -103,6 +128,26 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         finally {
             this.producer.flush();
             return true;
+        }
+    }
+
+    private boolean readRecords() {
+        int count  = 0;
+        while (count < 10) {
+            final ConsumerRecords<Long, String> consumerRecords =
+                    consumer.poll(1000);
+
+            if (consumerRecords.count()==0) break;
+
+            consumerRecords.forEach(record -> {
+                System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
+                        record.key(), record.value(),
+                        record.partition(), record.offset());
+                this.update(record.value());
+            });
+
+            consumer.commitAsync();
+            count += 1;
         }
     }
 
@@ -129,6 +174,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     @Override
     public V value() {
+        this.readRecords();
         try {
             byte[] valueBytes =
                     backend.namespaceKeyStatenameToValue.get(getNamespaceKeyStateNameTuple());
@@ -172,9 +218,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                     .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
                     .add(namespaceKeyStateNameTuple.f0);
 
-            // persist to Redpanda
-            // TODO: need right topic
-            this.writeMessage(namespaceKeyStateNameTuple.f1, value);
+            // // persist to Redpanda
+            // // TODO: need right topic
+            // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
