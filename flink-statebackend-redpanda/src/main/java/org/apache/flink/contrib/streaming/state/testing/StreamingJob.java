@@ -1,15 +1,20 @@
-package org.apache.flink.contrib.streaming.state;
+package org.apache.flink.contrib.streaming.state.testing;
 import java.util.Properties;
 
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
 
 // Redpanda imports
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
-import java.util.Properties;
+
+import org.apache.flink.contrib.streaming.state.benchmark.WordSource;
+import static org.apache.flink.contrib.streaming.state.benchmark.JobConfig.WORD_LENGTH;
+import static org.apache.flink.contrib.streaming.state.benchmark.JobConfig.WORD_NUMBER;
+import static org.apache.flink.contrib.streaming.state.benchmark.JobConfig.WORD_RATE;
 
 
 /**
@@ -46,7 +51,7 @@ import java.util.Properties;
  * You will find the jar in
  * 		target/flink.kafka.producer-1.0-SNAPSHOT.jar
  * From the CLI you can then run
- * 		./bin/flink run -c flink.kafka.producer.StreamingJob target/flink.kafka.producer-1.0-SNAPSHOT.jar
+ * 		./bin/flink run -c org.apache.flink.contrib.streaming.state.testing.StreamingJob target/flink.kafka.producer-1.0-SNAPSHOT.jar
  *
  * For more information on the CLI see:
  *
@@ -93,38 +98,44 @@ public class StreamingJob {
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-		DataStream<String> stream = env.fromElements(
-			"To be, or not to be,--that is the question:--",
-			"Whether 'tis nobler in the mind to suffer",
-			"The slings and arrows of outrageous fortune",
-			"Or to take arms against a sea of troubles,"
-		);
+		// DataStream<String> stream = env.fromElements(
+		// 	"apple",
+		// 	"banana",
+		// 	"cherry",
+		// 	"dragonfruit",
+		// 	"elderberry"
+		// );
 
-		KafkaProducer<Long, String> producer = createProducer();
+		// KafkaProducer<Long, String> producer = createProducer();
 
-		for (long index = 0; index < 3; index++) {
-			System.out.println(writeMessage("twitch_chat", "From main method " + index, producer));
-		}
-		producer.close();
+		// for (long index = 0; index < 3; index++) {
+		// 	System.out.println(writeMessage("twitch_chat", "From main method " + index, producer));
+		// }
+		// producer.close();
 
 		// we can send messages with kafka producer in the setup phase or we can send them with FlinkKafkaProducer
 
-		stream.print();
+
+		// configure source
+		DataStream<Tuple2<String, Long>> source = 
+			WordSource.getSource(env, WORD_RATE.defaultValue() / 10000, WORD_NUMBER.defaultValue(), WORD_LENGTH.defaultValue())
+						.slotSharingGroup("src");
+
 
 		Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             BOOTSTRAP_SERVERS);
 				
-		stream.addSink(
-			new FlinkKafkaProducer<String>(
-				"twitch_chat",                  // target topic
-				new ProducerStringSerializationSchema("twitch_chat"),    // serialization schema
+		source.addSink(
+			new FlinkKafkaProducer<Tuple2<String, Long>>(
+				"word_chat",                  // target topic
+				new ProducerStringSerializationSchema("word_chat"),    // serialization schema
 				props,                  // producer config
 				FlinkKafkaProducer.Semantic.EXACTLY_ONCE // fault-tolerance);
 			)
 		); 
 
 		// execute program
-		env.execute("Flink Streaming Java API Skeleton");
+		env.execute("Flink Streaming Job to Redpanda");
 	}
 }
