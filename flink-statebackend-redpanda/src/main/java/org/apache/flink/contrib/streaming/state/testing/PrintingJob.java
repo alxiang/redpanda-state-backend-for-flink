@@ -1,6 +1,7 @@
 package org.apache.flink.contrib.streaming.state.testing;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -26,6 +27,7 @@ public class PrintingJob {
 		// set up the streaming execution environment
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		env.setStateBackend(new RedpandaStateBackend());
 
         // read an infinite stream
         env.fromElements(

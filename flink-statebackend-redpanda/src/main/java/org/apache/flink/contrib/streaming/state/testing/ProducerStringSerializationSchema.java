@@ -21,6 +21,6 @@ public class ProducerStringSerializationSchema implements KafkaSerializationSche
         buffer.putLong(element.f1);
         
         // ProducerRecord(String topic, K key, V value)
-        return new ProducerRecord<byte[], byte[]>(topic, element.f0.getBytes(StandardCharsets.UTF_8));
+        return new ProducerRecord<byte[], byte[]>(topic, buffer.array(), element.f0.getBytes(StandardCharsets.UTF_8));
     }        
 }

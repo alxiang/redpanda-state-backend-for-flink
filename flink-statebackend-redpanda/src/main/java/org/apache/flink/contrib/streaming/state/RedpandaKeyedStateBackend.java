@@ -36,6 +36,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import javax.annotation.Nonnull;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -75,6 +76,10 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
     private boolean disposed = false;
     /** The key serializer. */
     protected final TypeSerializer<K> keySerializer;
+
+
+    // OUR CODE !!
+    public Map<String, Long> intermediate;
 
     SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
     private static final Map<Class<? extends StateDescriptor>, StateFactory> STATE_FACTORIES =
@@ -135,6 +140,9 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.stateToStateName = stateToStateName;
         this.namespaceKeyStatenameToValue = namespaceKeyStatenameToValue;
         this.stateNameToState = stateNameToState;
+
+        // OUR CODE
+        this.intermediate = new HashMap<String, Long>();
     }
 
     /** @see KeyedStateBackend */

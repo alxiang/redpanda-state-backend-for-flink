@@ -10,7 +10,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
-
+import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
 import org.apache.flink.contrib.streaming.state.benchmark.WordSource;
 import static org.apache.flink.contrib.streaming.state.benchmark.JobConfig.WORD_LENGTH;
 import static org.apache.flink.contrib.streaming.state.benchmark.JobConfig.WORD_NUMBER;
@@ -97,6 +97,7 @@ public class StreamingJob {
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		env.setStateBackend(new RedpandaStateBackend());
 
 		// DataStream<String> stream = env.fromElements(
 		// 	"apple",

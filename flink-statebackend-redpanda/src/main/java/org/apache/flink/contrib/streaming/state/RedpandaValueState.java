@@ -36,11 +36,14 @@ import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.Collections;
 import java.util.Properties;
 
 import java.nio.ByteBuffer;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * {@link ValueState} implementation that stores state in RocksDB.
@@ -53,9 +56,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<Long, V> producer;
-    private KafkaConsumer<Long, V> consumer;
-    private final static String TOPIC = "twitch_chat";
+    private KafkaConsumer<Long, String> consumer;
+    private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
+
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -84,7 +88,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             BOOTSTRAP_SERVERS);
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaExampleProducer");
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                                         LongSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
@@ -94,19 +98,19 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return new KafkaProducer<Long, V>(props);
     }
 
-    private KafkaConsumer<Long, V> createConsumer() {
+    private KafkaConsumer<Long, String> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                     BOOTSTRAP_SERVERS);
         props.put(ConsumerConfig.GROUP_ID_CONFIG,
-                                    "RedpandaExampleConsumer");
+                                    "RedpandaConsumer");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 LongDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 StringDeserializer.class.getName());
   
         // Create the consumer using props.
-        final KafkaConsumer<Long, V> consumer =
+        final KafkaConsumer<Long, String> consumer =
                                     new KafkaConsumer<>(props);
   
         // Subscribe to the topic.
@@ -132,23 +136,36 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
     private boolean readRecords() {
-        int count  = 0;
-        while (count < 10) {
-            final ConsumerRecords<Long, String> consumerRecords =
-                    consumer.poll(1000);
+        // int count  = 0;
+        // while (count < 10) {
 
-            if (consumerRecords.count()==0) break;
+        // format: (Long timestamp, String word)
+        final ConsumerRecords<Long, String> consumerRecords =
+                consumer.poll(10);
 
+        if (consumerRecords.count() != 0){
             consumerRecords.forEach(record -> {
                 System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
                         record.key(), record.value(),
                         record.partition(), record.offset());
-                this.update(record.value());
-            });
+                this.update((V) record.value());
 
+                
+
+                // add records to intermediate map
+                /*
+                if map.get(record.value()) is None:
+                    map[record.value()] = 1
+                else:
+                    map[record.value()] = map[record.value()] + 1
+                */
+            });
+    
             consumer.commitAsync();
-            count += 1;
         }
+        return true;
+        // count += 1;
+        // }
     }
 
     @Override
@@ -175,6 +192,17 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     @Override
     public V value() {
         this.readRecords();
+
+        // return (V) " ";
+
+        /*
+        key = getNamespaceKeyStateNameTuple().f1
+        if(intermediate.get(key) != None):
+            this.update(intermediate[key])
+        intermediate[key] = 0
+        */
+        
+
         try {
             byte[] valueBytes =
                     backend.namespaceKeyStatenameToValue.get(getNamespaceKeyStateNameTuple());
