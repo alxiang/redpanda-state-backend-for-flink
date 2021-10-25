@@ -53,7 +53,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<Long, V> producer;
-    private KafkaProducer<Long, V> consumer;
+    private KafkaConsumer<Long, V> consumer;
     private final static String TOPIC = "twitch_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
@@ -94,7 +94,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return new KafkaProducer<Long, V>(props);
     }
 
-    private static Consumer<Long, String> createConsumer() {
+    private KafkaConsumer<Long, V> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                     BOOTSTRAP_SERVERS);
@@ -106,7 +106,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                 StringDeserializer.class.getName());
   
         // Create the consumer using props.
-        final Consumer<Long, String> consumer =
+        final KafkaConsumer<Long, V> consumer =
                                     new KafkaConsumer<>(props);
   
         // Subscribe to the topic.
