@@ -36,6 +36,8 @@ import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -53,7 +55,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<Long, V> producer;
-    private KafkaProducer<Long, V> consumer;
+    private Consumer<Long, V> consumer;
     private final static String TOPIC = "twitch_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
@@ -143,7 +145,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                 System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
                         record.key(), record.value(),
                         record.partition(), record.offset());
-                this.update(record.value());
+                this.update((V) record.value());
             });
 
             consumer.commitAsync();
