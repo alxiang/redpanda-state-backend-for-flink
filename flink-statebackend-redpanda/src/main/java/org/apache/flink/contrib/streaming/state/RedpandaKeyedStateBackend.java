@@ -77,6 +77,7 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
     /** The key serializer. */
     protected final TypeSerializer<K> keySerializer;
 
+    // public final RedpandaConsumer<K> consumer;
 
     // OUR CODE !!
     public Map<String, Long> intermediate;
@@ -140,6 +141,7 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.stateToStateName = stateToStateName;
         this.namespaceKeyStatenameToValue = namespaceKeyStatenameToValue;
         this.stateNameToState = stateNameToState;
+        // this.consumer = new RedpandaConsumer<K>(this);
 
         // OUR CODE
         this.intermediate = new HashMap<String, Long>();

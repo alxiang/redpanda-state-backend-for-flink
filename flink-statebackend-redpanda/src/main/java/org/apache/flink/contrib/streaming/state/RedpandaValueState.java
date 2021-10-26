@@ -142,7 +142,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // format: (Long timestamp, String word)
         final ConsumerRecords<Long, String> consumerRecords =
                 consumer.poll(10);
-
+        System.out.println("in readRecords");
+        System.out.println(consumerRecords.count());
         if (consumerRecords.count() != 0){
             consumerRecords.forEach(record -> {
                 System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
