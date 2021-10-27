@@ -10,15 +10,16 @@ import org.apache.kafka.common.record.*;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
-public class RedpandaConsumer<K> {
+public class RedpandaConsumer<K> extends Thread{
     private RedpandaKeyedStateBackend<K> backend;
+    private Consumer<Long, String> consumer;
 
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     public RedpandaConsumer(RedpandaKeyedStateBackend<K> keyedBackend) {
         this.backend = keyedBackend;
-        this.runConsumer();
+        this.consumer = createConsumer();
     }
 
     private static Consumer<Long, String> createConsumer() {
@@ -35,29 +36,22 @@ public class RedpandaConsumer<K> {
         consumer.subscribe(Collections.singletonList(TOPIC));
         return consumer;
     }
+    
+    public void run() {
+        
+        while (true) {
+            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000);
 
-    private void runConsumer() {
-        Thread thread = new Thread() {
-            public void run() {
-                final Consumer<Long, String> consumer = createConsumer();
+            System.out.println("Polled");
 
-                while (true) {
-                    final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000);
+            if (consumerRecords.count() != 0) {
+                consumerRecords.forEach(record -> {
+                    System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
+                            record.partition(), record.offset());
+                });
 
-                    System.out.println("Polled");
-
-                    if (consumerRecords.count() != 0) {
-                        consumerRecords.forEach(record -> {
-                            System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
-                                    record.partition(), record.offset());
-                        });
-
-                        consumer.commitAsync();
-                    }
-                }
+                consumer.commitAsync();
             }
-        };
-
-        thread.start();
+        }
     }
 }
