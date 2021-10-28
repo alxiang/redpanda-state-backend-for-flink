@@ -20,13 +20,15 @@ public class WordCountMap extends RichFlatMapFunction<String, Tuple2<String, Lon
         // access state value
         Long currentCount = count.value();
 
+        if(currentCount == null) {
+            currentCount = 0L;
+        }
+
         // update count
         currentCount += 1;
 
         // update the state
         count.update(currentCount);
-
-        out.collect(new Tuple2<>(input, currentCount));
 
         if (currentCount >= 1) {
             out.collect(new Tuple2<>(input, currentCount));
@@ -39,8 +41,7 @@ public class WordCountMap extends RichFlatMapFunction<String, Tuple2<String, Lon
         ValueStateDescriptor<Long> descriptor =
                 new ValueStateDescriptor<>(
                         "Word counter", // the state name
-                        TypeInformation.of(new TypeHint<Long>() {}), // type information
-                        0L); // default value of the state, if nothing was set
+                        TypeInformation.of(new TypeHint<Long>() {})); // type information
         count = getRuntimeContext().getState(descriptor);
     }
 }

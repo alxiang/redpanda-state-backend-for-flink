@@ -77,7 +77,7 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
     /** The key serializer. */
     protected final TypeSerializer<K> keySerializer;
 
-    public Thread t1;
+    public Thread thread;
     // public final RedpandaConsumer<K> consumer;
 
     // OUR CODE !!
@@ -143,8 +143,9 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.namespaceKeyStatenameToValue = namespaceKeyStatenameToValue;
         this.stateNameToState = stateNameToState;
 
-        this.t1 = new RedpandaConsumer<K>(this);
+        // this.thread = new RedpandaConsumer<String, Long, String>(this);
 
+        // For now, run the thread synchronously to test for correctness of keys
         // this.t1.run();
 
         // OUR CODE

@@ -192,16 +192,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     @Override
     public V value() {
-        this.readRecords();
 
-        // return (V) " ";
-
-        /*
-        key = getNamespaceKeyStateNameTuple().f1
-        if(intermediate.get(key) != None):
-            this.update(intermediate[key])
-        intermediate[key] = 0
-        */
+        // backend.thread.run();
         
 
         try {
