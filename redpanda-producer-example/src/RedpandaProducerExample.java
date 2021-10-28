@@ -14,7 +14,7 @@ public class RedpandaProducerExample {
 
     // I set up a Redpanda cluster as specified here: https://vectorized.io/docs/quick-start-docker/#Do-some-streaming
     // I am publishing a "twitch_chat" topic with localhost:9092 as one of the brokers
-    private final static String TOPIC = "twitch_chat";
+    private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     private static Producer<Long, String> createProducer() {
@@ -39,7 +39,7 @@ public class RedpandaProducerExample {
             for (long index = time; index < time + sendMessageCount; index++) {
                 final ProducerRecord<Long, String> record =
                         new ProducerRecord<>(TOPIC, index,
-                                    "Hello world " + index);
+                                    "pear");
   
                 RecordMetadata metadata = producer.send(record).get(); // returns a java future
   

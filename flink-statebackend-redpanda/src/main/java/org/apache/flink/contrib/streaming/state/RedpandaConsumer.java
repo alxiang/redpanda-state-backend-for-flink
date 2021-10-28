@@ -61,8 +61,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     RedpandaValueState<K, N, Long> state;
 
     // For latency testing:
-    // keep track of total latency over 1,000,000 records 
-    Integer num_records = 1000000;
+    // keep track of total latency over 100,000,000 records 
+    Integer num_records = 10000;
     Integer curr_records = 0;
 
     // currentTimeMillis - record.timestamp()
@@ -105,6 +105,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
+        props.put("max.poll.records", 10000);
+        props.put("session.timeout.ms", 30000);
+        props.put("max.poll.interval.ms", 43200000);
+        props.put("request.timeout.ms", 43205000);
+        // props.put("max.poll.interval.ms", 1000);
+
         // Create the consumer using props.
         final Consumer<Long, String> consumer = new KafkaConsumer<>(props);
 
@@ -143,17 +149,19 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 
                 curr_records += 1;
             }
-            if(curr_records == num_records && latency_printed == false){
+
+            if((curr_records % 100 == 0) && (curr_records < num_records)){
                 System.out.println("===LATENCY TESTING RESULTS===");
-                System.out.printf("Number of samples: %d\n", num_records);
+                System.out.printf("Total Latency (from Producer): %f\n", 
+                    (float) total_latency_from_produced);
+                System.out.printf("Total Latency (from WordSource): %f\n",
+                    (float) total_latency_from_source);
                 System.out.printf("Average Latency (from Producer): %f\n", 
-                    (float) total_latency_from_produced / num_records);
+                    (float) total_latency_from_produced / curr_records);
                 System.out.printf("Average Latency (from WordSource): %f\n",
-                    (float) total_latency_from_source / num_records);
-
-                latency_printed = true;
+                    (float) total_latency_from_source / curr_records);
+                System.out.printf("Records processed: %d\n", curr_records);
             }
-
             // System.out.printf("updated state for %s to %d from %d\n", word_key, state.value(), curr);
         }
         catch (Exception exception){

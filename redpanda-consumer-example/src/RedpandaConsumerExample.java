@@ -12,7 +12,7 @@ import java.util.Properties;
 
 public class RedpandaConsumerExample {
 
-    private final static String TOPIC = "twitch_chat";
+    private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     private static Consumer<Long, String> createConsumer() {
@@ -25,6 +25,7 @@ public class RedpandaConsumerExample {
                 LongDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 StringDeserializer.class.getName());
+        props.put("max.poll.records", 5);
   
         // Create the consumer using props.
         final Consumer<Long, String> consumer =
@@ -38,17 +39,24 @@ public class RedpandaConsumerExample {
     static void runConsumer() throws InterruptedException {
         final Consumer<Long, String> consumer = createConsumer();
 
-        final int giveUp = 100;   int noRecordsCount = 0;
+        final int giveUp = 60;   int noRecordsCount = 0;
+
+        System.out.println("in run consumer");
 
         while (true) {
+
+            System.out.println("polling");
+            
             final ConsumerRecords<Long, String> consumerRecords =
                     consumer.poll(1000);
 
+            System.out.println("polled for x records: " + consumerRecords.count());
             if (consumerRecords.count()==0) {
                 noRecordsCount++;
                 if (noRecordsCount > giveUp) break;
                 else continue;
             }
+            
 
             consumerRecords.forEach(record -> {
                 System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
