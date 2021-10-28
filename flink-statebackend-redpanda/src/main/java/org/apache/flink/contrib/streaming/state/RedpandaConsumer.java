@@ -43,21 +43,22 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
-    protected final DataOutputSerializer dataOutputView;
-    protected final DataInputDeserializer dataInputView;   
+    // protected final DataOutputSerializer dataOutputView;
+    // protected final DataInputDeserializer dataInputView;   
 
-    /** Serializer for the namespace. */
-    final TypeSerializer<N> namespaceSerializer;
-    /** Serializer for the state values. */
-    final TypeSerializer<V> valueSerializer;
+    // /** Serializer for the namespace. */
+    // final TypeSerializer<N> namespaceSerializer;
+    // /** Serializer for the state values. */
+    // final TypeSerializer<V> valueSerializer;
 
-    final TypeSerializer<K> keySerializer;
+    // final TypeSerializer<K> keySerializer;
 
     private final SerializedCompositeKeyBuilder<K> sharedKeyNamespaceSerializer;
 
     // configured!
     final String stateName;
-    final N currentNamespace;
+    // final N currentNamespace;
+    RedpandaValueState<K, N, Long> state;
 
     public RedpandaConsumer(
         RedpandaKeyedStateBackend<K> keyedBackend
@@ -66,22 +67,23 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         this.consumer = createConsumer();
 
         // setup the data views
-        this.dataOutputView = new DataOutputSerializer(128);
-        this.dataInputView = new DataInputDeserializer();
+        // this.dataOutputView = new DataOutputSerializer(128);
+        // this.dataInputView = new DataInputDeserializer();
 
         sharedKeyNamespaceSerializer = backend.getSharedKeyBuilder();
 
         // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
         stateName = "Word counter"; 
+
         // For PrintingJob, the namespace is VoidNamespace.
         // We can tell this by printing the namespace in ValueState.value()
         // ex: https://www.programcreek.com/java-api-examples/?api=org.apache.flink.runtime.state.VoidNamespace
-        currentNamespace = (N) VoidNamespace.INSTANCE;
-        namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
+        // currentNamespace = (N) VoidNamespace.INSTANCE;
+        // namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
                
         // These should be user configured
-        keySerializer = (TypeSerializer<K>) new StringSerializer();
-        valueSerializer = (TypeSerializer<V>) new LongSerializer();
+        // keySerializer = state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
+        // valueSerializer = state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
     }
 
     private static Consumer<Long, String> createConsumer() {
@@ -99,85 +101,47 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         return consumer;
     }
 
-    public byte[] serializeValue(V value, TypeSerializer<V> safeValueSerializer) throws Exception {
-        dataOutputView.clear();
-        safeValueSerializer.serialize(value, dataOutputView);
-        return dataOutputView.getCopyOfBuffer();
-    }
-
-    public byte[] serializeNamespace(N namespace, TypeSerializer<N> safeValueSerializer)
-            throws Exception {
-        dataOutputView.clear();
-        safeValueSerializer.serialize(namespace, dataOutputView);
-        return dataOutputView.getCopyOfBuffer();
-    }
-
     private void processRecord(ConsumerRecord<Long, String> record){
+        System.out.println();
         System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
                 record.partition(), record.offset());
 
         try{
-            // 0.1. Instantiate namespaceKeyStateNameTuple
-            // - assumes we know the currentNamespace and the stateName
-            Tuple2<byte[], String> namespaceKeyStateNameTuple = new Tuple2<byte[], String>(
-                sharedKeyNamespaceSerializer.buildCompositeKeyNamespace(currentNamespace, namespaceSerializer), stateName
-            );
-            // 0.2. Instantiate tupleForKeys
-            byte[] serializedCurrentNamespace = serializeNamespace(currentNamespace, namespaceSerializer);
-            Tuple2<ByteBuffer, String> tupleForKeys = 
-                new Tuple2(ByteBuffer.wrap(serializedCurrentNamespace), stateName);
-                
-            // 1. Get the serialized value and put it into namespaceKeyStatenameToValue
-            // - assumes we know type of valueSerializer
-            byte[] serializedValue = serializeValue((V) record.value(), valueSerializer); 
-            backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
+            String word_key = record.value();
+            state.getSharedKeyNamespaceSerializer().setKeyAndKeyGroup((K) word_key, 0);
 
-            // 2. Try to get a ValueState corresponding to the key in record,
-            //    and instantiate a new ValueState if one doesn't exist for the corresponding key
-            org.apache.flink.api.common.state.State ValueState = 
-                backend.namespaceKeyStateNameToState.get(namespaceKeyStateNameTuple); // key line
-            if(ValueState == null){
-                // need to create state here
-                // ValueState = new RedpandaValueState<>(
-                //         namespaceSerializer,
-                //         null,//StateSerializer,
-                //         keySerializer,
-                //         0L,
-                //         backend);
-                backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, ValueState);
+            // get the current state for the word and add 1 to it
+            Long curr = state.value();
+            if(curr == null){
+                curr = 0L;
             }
+            state.update(curr + 100); // TEMP: adding 100 for testing purposes
 
-            // 3. Add the record's value to the keyHash and put the keyHash in the backend
-            HashSet<K> keyHash =
-                    backend.namespaceAndStateNameToKeys.getOrDefault(
-                            tupleForKeys, new HashSet<K>());
-            keyHash.add((K) record.value());//backend.getCurrentKey());
-            backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
-
-            backend.stateNamesToKeysAndNamespaces
-                    .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
-                    .add(namespaceKeyStateNameTuple.f0);
+            System.out.printf("updated state for %s to %d from %d\n", word_key, state.value(), curr);
         }
         catch (Exception exception){
             System.out.println("Exception in processRecord(): " + exception);
         }
-
-        
-        
     }
     
+    // NOTE: this does not reset the key to what is was before
+    // not sure if it is possible to reset the key
     public void run() {
+
+        System.out.println("retrieving state from statename");
+        state = (RedpandaValueState<K, N, Long>) backend.stateNameToState.get(stateName);
+        System.out.println("retrieved: " + state);
         
         Integer i = 0;
-        while (i < 10) {
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000L);
-
+        while (i < 1) {
             System.out.println("Polling in RedpandaConsumer...");
+            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(5000L);
 
             if (consumerRecords.count() != 0) {
 
                 consumerRecords.forEach(record -> processRecord(record));
                 consumer.commitAsync();
+                break;
             }
             else {
                 System.out.println("No records.");
@@ -185,5 +149,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
             i += 1;
         }
+
+        // TODO: If we had the previous key, we could reset it like this
+        // state.getSharedKeyNamespaceSerializer().setKeyAndKeyGroup((K) prev_key, 0);
     }
 }

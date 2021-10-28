@@ -193,8 +193,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     @Override
     public V value() {
 
-        // backend.thread.run();
-
         // Code to get configurable variables:
         // System.out.println("backend.stateToStateName.get(this): " + backend.stateToStateName.get(this));
         // System.out.println("currentNamespace " + this.getCurrentNamespace());
@@ -251,6 +249,12 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
+
+        // NOTE: we are running our Redpanda backend update code here because
+        //       the system should automatically switch keys
+        //       when the ValueState's key switches in the user space 
+        System.out.println("running redpanda thread\n");
+        backend.thread.run();
     }
 
     @Override

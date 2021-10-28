@@ -28,6 +28,7 @@ public class PrintingJob {
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStateBackend(new RedpandaStateBackend());
+		env.getConfig().setMaxParallelism(1);
 
         // read an infinite stream
         env.fromElements(
