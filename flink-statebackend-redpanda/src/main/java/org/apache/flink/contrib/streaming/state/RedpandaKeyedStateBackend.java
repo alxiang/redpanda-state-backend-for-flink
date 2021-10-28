@@ -77,11 +77,8 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
     /** The key serializer. */
     protected final TypeSerializer<K> keySerializer;
 
+    // Our Redpanda thread
     public Thread thread;
-    // public final RedpandaConsumer<K> consumer;
-
-    // OUR CODE !!
-    public Map<String, Long> intermediate;
 
     SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
     private static final Map<Class<? extends StateDescriptor>, StateFactory> STATE_FACTORIES =
@@ -143,13 +140,10 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.namespaceKeyStatenameToValue = namespaceKeyStatenameToValue;
         this.stateNameToState = stateNameToState;
 
-        // this.thread = new RedpandaConsumer<String, Long, String>(this);
+        this.thread = new RedpandaConsumer<K, Long, String>(this);
 
         // For now, run the thread synchronously to test for correctness of keys
         // this.t1.run();
-
-        // OUR CODE
-        this.intermediate = new HashMap<String, Long>();
     }
 
     /** @see KeyedStateBackend */

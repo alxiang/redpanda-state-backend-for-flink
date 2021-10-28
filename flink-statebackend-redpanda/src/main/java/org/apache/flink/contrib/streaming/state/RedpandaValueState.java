@@ -194,7 +194,13 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() {
 
         // backend.thread.run();
-        
+
+        // Code to get configurable variables:
+        // System.out.println("backend.stateToStateName.get(this): " + backend.stateToStateName.get(this));
+        // System.out.println("currentNamespace " + this.getCurrentNamespace());
+        // System.out.println("stateName " + getStateName());
+        // System.out.println("keySerializer " + keySerializer);
+        // System.out.println("valueSerializer " + valueSerializer);
 
         try {
             byte[] valueBytes =

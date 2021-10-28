@@ -11,13 +11,18 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.record.*;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputDeserializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
+import org.apache.flink.runtime.state.VoidNamespace;
+import org.apache.flink.runtime.state.VoidNamespaceSerializer;
+import org.apache.flink.streaming.api.functions.sink.TwoPhaseCommitSinkFunction.StateSerializer;
+import org.apache.flink.api.common.typeutils.base.StringSerializer;
+import org.apache.flink.api.common.typeutils.base.LongSerializer;
+
 
 import java.nio.ByteBuffer;
 import java.util.HashSet;
@@ -27,7 +32,8 @@ import org.apache.flink.api.common.state.State;
 /*
 Stuff to print in ValueState (configurations)
 - this.backend.stateToStateName.get(this) -> stateName
-- 
+- currentNamespace and the stateName
+- keySerializer and valueSerializer
 */
 public class RedpandaConsumer<K, V, N> extends Thread{
 
@@ -63,16 +69,19 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         this.dataOutputView = new DataOutputSerializer(128);
         this.dataInputView = new DataInputDeserializer();
 
-        stateName = "namespacePlaceholder";
-        currentNamespace = (N) "namespacePlaceholder";
-       
         sharedKeyNamespaceSerializer = backend.getSharedKeyBuilder();
-        
-        // TODO: not sure what type
-        namespaceSerializer = null;
-        // TODO: these should serialize Strings and Longs respectively
-        keySerializer = null;
-        valueSerializer = null;
+
+        // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
+        stateName = "Word counter"; 
+        // For PrintingJob, the namespace is VoidNamespace.
+        // We can tell this by printing the namespace in ValueState.value()
+        // ex: https://www.programcreek.com/java-api-examples/?api=org.apache.flink.runtime.state.VoidNamespace
+        currentNamespace = (N) VoidNamespace.INSTANCE;
+        namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
+               
+        // These should be user configured
+        keySerializer = (TypeSerializer<K>) new StringSerializer();
+        valueSerializer = (TypeSerializer<V>) new LongSerializer();
     }
 
     private static Consumer<Long, String> createConsumer() {
@@ -129,6 +138,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 backend.namespaceKeyStateNameToState.get(namespaceKeyStateNameTuple); // key line
             if(ValueState == null){
                 // need to create state here
+                // ValueState = new RedpandaValueState<>(
+                //         namespaceSerializer,
+                //         null,//StateSerializer,
+                //         keySerializer,
+                //         0L,
+                //         backend);
                 backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, ValueState);
             }
 
