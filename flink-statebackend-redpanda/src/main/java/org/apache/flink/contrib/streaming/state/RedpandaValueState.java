@@ -214,7 +214,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         }
     }
 
-    // TODO: this should produce a record to Redpanda
     @Override
     public void update(V value) {
         if (value == null) {
@@ -253,8 +252,44 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // NOTE: we are running our Redpanda backend update code here because
         //       the system should automatically switch keys
         //       when the ValueState's key switches in the user space 
-        System.out.println("running redpanda thread\n");
+        // System.out.println("running redpanda thread\n");
         backend.thread.run();
+    }
+
+    // update without the Redpanda reading
+    public void update_(V value) {
+        if (value == null) {
+            clear();
+            return;
+        }
+        try {
+            byte[] serializedValue = serializeValue(value, valueSerializer);
+            Tuple2<byte[], String> namespaceKeyStateNameTuple = getNamespaceKeyStateNameTuple();
+            backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
+
+            //            Fixed bug where we were using the wrong tuple to update the keys
+            byte[] currentNamespace = serializeCurrentNamespace();
+
+            Tuple2<ByteBuffer, String> tupleForKeys =
+                    new Tuple2(ByteBuffer.wrap(currentNamespace), getStateName());
+            HashSet<K> keyHash =
+                    backend.namespaceAndStateNameToKeys.getOrDefault(
+                            tupleForKeys, new HashSet<K>());
+            keyHash.add(backend.getCurrentKey());
+
+            backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
+
+            backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this);
+            backend.stateNamesToKeysAndNamespaces
+                    .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
+                    .add(namespaceKeyStateNameTuple.f0);
+
+            // // persist to Redpanda
+            // // TODO: need right topic
+            // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
+        } catch (java.lang.Exception e) {
+            throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
+        }
     }
 
     @Override

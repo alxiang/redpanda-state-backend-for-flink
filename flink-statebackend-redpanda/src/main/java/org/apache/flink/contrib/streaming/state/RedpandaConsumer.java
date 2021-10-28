@@ -23,7 +23,7 @@ import org.apache.flink.streaming.api.functions.sink.TwoPhaseCommitSinkFunction.
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 
-
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -59,6 +59,18 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     final String stateName;
     // final N currentNamespace;
     RedpandaValueState<K, N, Long> state;
+
+    // For latency testing:
+    // keep track of total latency over 1,000,000 records 
+    Integer num_records = 1000000;
+    Integer curr_records = 0;
+
+    // currentTimeMillis - record.timestamp()
+    Long total_latency_from_produced = 0L;
+    // currentTimeMillis - record.key()
+    Long total_latency_from_source = 0L;
+
+    Boolean latency_printed = false;
 
     public RedpandaConsumer(
         RedpandaKeyedStateBackend<K> keyedBackend
@@ -102,9 +114,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     }
 
     private void processRecord(ConsumerRecord<Long, String> record){
-        System.out.println();
-        System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
-                record.partition(), record.offset());
+        // System.out.println();
+        // System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
+        //         record.partition(), record.offset());
 
         try{
             String word_key = record.value();
@@ -112,12 +124,37 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
             // get the current state for the word and add 1 to it
             Long curr = state.value();
+            // System.out.printf("Retrieved state value: %d\n", curr);
             if(curr == null){
                 curr = 0L;
             }
-            state.update(curr + 100); // TEMP: adding 100 for testing purposes
+            // Using update_ instead of update so that this.run() is not called recursively
+            state.update_(curr + 1);
 
-            System.out.printf("updated state for %s to %d from %d\n", word_key, state.value(), curr);
+            // Latency testing: after this point, the new value is available in the user-code
+            if(curr_records < num_records){
+                long currentTime = System.currentTimeMillis();
+
+                total_latency_from_produced += (currentTime - record.timestamp());
+                assert(currentTime - record.timestamp() > 0);
+
+                total_latency_from_source += (currentTime - record.key());
+                assert(currentTime - record.key() > 0);
+                
+                curr_records += 1;
+            }
+            if(curr_records == num_records && latency_printed == false){
+                System.out.println("===LATENCY TESTING RESULTS===");
+                System.out.printf("Number of samples: %d\n", num_records);
+                System.out.printf("Average Latency (from Producer): %f\n", 
+                    (float) total_latency_from_produced / num_records);
+                System.out.printf("Average Latency (from WordSource): %f\n",
+                    (float) total_latency_from_source / num_records);
+
+                latency_printed = true;
+            }
+
+            // System.out.printf("updated state for %s to %d from %d\n", word_key, state.value(), curr);
         }
         catch (Exception exception){
             System.out.println("Exception in processRecord(): " + exception);
@@ -128,14 +165,14 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     // not sure if it is possible to reset the key
     public void run() {
 
-        System.out.println("retrieving state from statename");
+        // System.out.println("retrieving state from statename");
         state = (RedpandaValueState<K, N, Long>) backend.stateNameToState.get(stateName);
-        System.out.println("retrieved: " + state);
+        // System.out.println("retrieved: " + state);
         
         Integer i = 0;
         while (i < 1) {
-            System.out.println("Polling in RedpandaConsumer...");
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(5000L);
+            // System.out.println("Polling in RedpandaConsumer...");
+            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(100L);
 
             if (consumerRecords.count() != 0) {
 
@@ -144,7 +181,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 break;
             }
             else {
-                System.out.println("No records.");
+                // System.out.println("No records.");
             }
 
             i += 1;

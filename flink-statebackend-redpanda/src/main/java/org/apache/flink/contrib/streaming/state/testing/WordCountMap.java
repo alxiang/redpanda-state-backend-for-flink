@@ -9,31 +9,25 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.*;
 
-public class WordCountMap extends RichFlatMapFunction<String, Tuple2<String, Long>>{
+public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tuple2<String, Long>>{
 
     private transient ValueState<Long> count;
 
     // https://ci.apache.org/projects/flink/flink-docs-release-1.1/apis/streaming/state.html
     @Override
-    public void flatMap(String input, Collector<Tuple2<String, Long>> out) throws Exception {
+    public void flatMap(Tuple2<String, Long> input, Collector<Tuple2<String, Long>> out) throws Exception {
 
         // access state value
         Long currentCount = count.value();
-
-        if(currentCount == null) {
-            currentCount = 0L;
-        }
+        currentCount = currentCount == null ? 1L : currentCount + 1L;
 
         // update count
         currentCount += 1;
 
         // update the state
         count.update(currentCount);
-
-        if (currentCount >= 1) {
-            out.collect(new Tuple2<>(input, currentCount));
-            // count.clear();
-        }
+        
+        out.collect(new Tuple2<String, Long>(input.f0, currentCount));
     }
 
     @Override

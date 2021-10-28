@@ -1,6 +1,7 @@
 package org.apache.flink.contrib.streaming.state.testing;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
 
 /**
@@ -32,13 +33,13 @@ public class PrintingJob {
 
         // read an infinite stream
         env.fromElements(
-			"apple",
-			"banana",
-			"cherry",
-			"dragonfruit",
-			"elderberry",
-			"apple"
-		).keyBy(value -> value)
+			new Tuple2<String, Long>("apple", 0L),
+			new Tuple2<String, Long>("banana", 0L),
+			new Tuple2<String, Long>("cherry", 0L),
+			new Tuple2<String, Long>("dragonfruit", 0L),
+			new Tuple2<String, Long>("elderberry", 0L),
+			new Tuple2<String, Long>("apple", 0L)
+		).keyBy(record -> record.f0)
         .flatMap(new WordCountMap()) // while reading the stream, employ ValueState which is updated by our backend
         .print();
 
