@@ -119,7 +119,7 @@ public class StreamingJob {
 
 		// configure source
 		DataStream<Tuple2<String, Long>> source = 
-			WordSource.getSource(env, 10, WORD_NUMBER.defaultValue(), WORD_LENGTH.defaultValue())
+			WordSource.getSource(env, 100, WORD_NUMBER.defaultValue(), WORD_LENGTH.defaultValue())
 						.slotSharingGroup("src");
 
 

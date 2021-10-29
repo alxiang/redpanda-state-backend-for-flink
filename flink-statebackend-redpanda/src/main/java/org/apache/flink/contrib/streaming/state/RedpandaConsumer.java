@@ -62,7 +62,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     // For latency testing:
     // keep track of total latency over 100,000,000 records 
-    Integer num_records = 10000;
+    Integer num_records = 1000000;
     Integer curr_records = 0;
 
     // currentTimeMillis - record.timestamp()
@@ -105,11 +105,13 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
-        props.put("max.poll.records", 10000);
         props.put("session.timeout.ms", 30000);
         props.put("max.poll.interval.ms", 43200000);
         props.put("request.timeout.ms", 43205000);
-        // props.put("max.poll.interval.ms", 1000);
+
+        // performance configs
+        props.put("fetch.min.bytes", 100000000);
+        props.put("max.poll.records", 10000);
 
         // Create the consumer using props.
         final Consumer<Long, String> consumer = new KafkaConsumer<>(props);
@@ -150,7 +152,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 curr_records += 1;
             }
 
-            if((curr_records % 100 == 0) && (curr_records < num_records)){
+            if((curr_records % 1000 == 0) && (curr_records < num_records)){
                 System.out.println("===LATENCY TESTING RESULTS===");
                 System.out.printf("Total Latency (from Producer): %f\n", 
                     (float) total_latency_from_produced);
@@ -180,9 +182,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         Integer i = 0;
         while (i < 1) {
             // System.out.println("Polling in RedpandaConsumer...");
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(100L);
+            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(0L);
 
             if (consumerRecords.count() != 0) {
+
+                System.out.println("Num consumer records " + consumerRecords.count());
 
                 consumerRecords.forEach(record -> processRecord(record));
                 consumer.commitAsync();
