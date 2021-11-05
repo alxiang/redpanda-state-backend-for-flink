@@ -20,6 +20,7 @@ import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
 import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.VoidNamespaceSerializer;
 import org.apache.flink.streaming.api.functions.sink.TwoPhaseCommitSinkFunction.StateSerializer;
+import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 
@@ -43,22 +44,24 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
-    // protected final DataOutputSerializer dataOutputView;
-    // protected final DataInputDeserializer dataInputView;   
+    protected final DataOutputSerializer dataOutputView;
+    protected final DataInputDeserializer dataInputView;   
 
     // /** Serializer for the namespace. */
     // final TypeSerializer<N> namespaceSerializer;
     // /** Serializer for the state values. */
-    // final TypeSerializer<V> valueSerializer;
+    final TypeSerializer<V> valueSerializer;
 
-    // final TypeSerializer<K> keySerializer;
+    final TypeSerializer<K> keySerializer;
 
-    private final SerializedCompositeKeyBuilder<K> sharedKeyNamespaceSerializer;
+    private final SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
+    SerializedCompositeKeyBuilder keyBuilder;
 
     // configured!
     final String stateName;
     // final N currentNamespace;
     RedpandaValueState<K, N, Long> state;
+    
 
     // For latency testing:
     // keep track of total latency over 100,000,000 records 
@@ -76,13 +79,17 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         RedpandaKeyedStateBackend<K> keyedBackend
     ) {
         backend = keyedBackend;
-        this.consumer = createConsumer();
 
         // setup the data views
-        // this.dataOutputView = new DataOutputSerializer(128);
-        // this.dataInputView = new DataInputDeserializer();
+        this.dataOutputView = new DataOutputSerializer(128);
+        this.dataInputView = new DataInputDeserializer();
 
-        sharedKeyNamespaceSerializer = backend.getSharedKeyBuilder();
+        sharedKeyBuilder = backend.getSharedKeyBuilder();
+        keyBuilder = new SerializedCompositeKeyBuilder<>(
+            backend.getKeySerializer(),
+            backend.getKeyGroupPrefixBytes(),
+            32
+        );
 
         // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
         stateName = "Word counter"; 
@@ -94,8 +101,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
                
         // These should be user configured
-        // keySerializer = state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
-        // valueSerializer = state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
+        keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
+        valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
     }
 
     private static Consumer<Long, String> createConsumer() {
@@ -121,6 +128,34 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         return consumer;
     }
 
+    private V getValue(K key){
+
+        keyBuilder.setKeyAndKeyGroup(key, 0);
+
+        try {
+            Tuple2<byte[], String> namespaceKeyStateNameTuple = new Tuple2<byte[], String>(
+                keyBuilder.buildCompositeKeyNamespace(
+                    state.getCurrentNamespace(), 
+                    state.getNamespaceSerializer()
+                ),
+                stateName
+            );
+
+            byte[] valueBytes =
+                    backend.namespaceKeyStatenameToValue.get(namespaceKeyStateNameTuple);
+            if (valueBytes == null) {
+                return (V) state.getDefaultValue();
+            }
+
+            dataInputView.setBuffer(valueBytes);
+            return valueSerializer.deserialize(dataInputView);
+
+        } catch (java.lang.Exception e) {
+            throw new FlinkRuntimeException(
+                    "Error while retrieving data in getValue() in RedpandaConsumer.", e);
+        }
+    }
+
     private void processRecord(ConsumerRecord<Long, String> record){
         // System.out.println();
         // System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
@@ -128,14 +163,13 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         try{
             String word_key = record.value();
-            state.getSharedKeyNamespaceSerializer().setKeyAndKeyGroup((K) word_key, 0);
-
             // get the current state for the word and add 1 to it
-            Long curr = state.value();
+            Long curr = (Long) this.getValue((K) word_key);
             // System.out.printf("Retrieved state value: %d\n", curr);
             if(curr == null){
                 curr = 0L;
             }
+
             // Using update_ instead of update so that this.run() is not called recursively
             state.update_(curr + 1);
 
@@ -175,10 +209,26 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     // not sure if it is possible to reset the key
     public void run() {
 
-        // System.out.println("retrieving state from statename");
+        if(this.consumer == null){
+            this.consumer = createConsumer();
+        }
+
+        System.out.println("retrieving state from statename");
         state = (RedpandaValueState<K, N, Long>) backend.stateNameToState.get(stateName);
-        // System.out.println("retrieved: " + state);
-        
+        System.out.println("retrieved: " + state);
+
+        System.out.println("retrieving current key from state");
+        K key = backend.getCurrentKey();
+        System.out.println("retrieved: " + key);
+
+        System.out.println("retrieving current key group from state");
+        int keygroup = backend.getCurrentKeyGroupIndex();
+        System.out.println("retrieved: " + keygroup);
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        System.out.println("debug classloader");
+        System.out.println(cl);
+        System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
         Integer i = 0;
         while (i < 1) {
             // System.out.println("Polling in RedpandaConsumer...");
