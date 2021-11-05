@@ -143,7 +143,10 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.thread = new RedpandaConsumer<K, Long, String>(this);
 
         // For now, run the thread synchronously to test for correctness of keys
-        // this.t1.run();
+        // System.out.println("prior" + this.thread.getContextClassLoader());
+        // this.thread.setContextClassLoader(ClassLoader.getSystemClassLoader());
+        // System.out.println("posterior" +this.thread.getContextClassLoader());
+        
     }
 
     /** @see KeyedStateBackend */

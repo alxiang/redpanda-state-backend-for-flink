@@ -81,6 +81,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // Create Redpanda producer
         this.producer = this.createProducer();
         this.consumer = this.createConsumer();
+
+        this.backend.thread.run();
     }
 
     private KafkaProducer<Long, V> createProducer() {
@@ -253,7 +255,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         //       the system should automatically switch keys
         //       when the ValueState's key switches in the user space 
         // System.out.println("running redpanda thread\n");
-        backend.thread.run();
+        // backend.thread.run();
     }
 
     // update without the Redpanda reading

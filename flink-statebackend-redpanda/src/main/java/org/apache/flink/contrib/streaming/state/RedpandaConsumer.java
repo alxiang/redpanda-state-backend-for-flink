@@ -128,18 +128,22 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         return consumer;
     }
 
+    private Tuple2<byte[], String> myGetNamespaceKeyStateNameTuple(){
+        return new Tuple2<byte[], String>(
+            keyBuilder.buildCompositeKeyNamespace(
+                state.getCurrentNamespace(), 
+                state.getNamespaceSerializer()
+            ),
+            stateName
+        );
+    }
+
     private V getValue(K key){
 
         keyBuilder.setKeyAndKeyGroup(key, 0);
 
         try {
-            Tuple2<byte[], String> namespaceKeyStateNameTuple = new Tuple2<byte[], String>(
-                keyBuilder.buildCompositeKeyNamespace(
-                    state.getCurrentNamespace(), 
-                    state.getNamespaceSerializer()
-                ),
-                stateName
-            );
+            Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
 
             byte[] valueBytes =
                     backend.namespaceKeyStatenameToValue.get(namespaceKeyStateNameTuple);
@@ -153,6 +157,51 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException(
                     "Error while retrieving data in getValue() in RedpandaConsumer.", e);
+        }
+    }
+
+    private void makeUpdate(K key, V value){
+
+        keyBuilder.setKeyAndKeyGroup(key, 0);
+
+        if (value == null) {
+            // TODO: unimplemented
+            // clear();
+            return;
+        }
+        try {
+            dataOutputView.clear();
+            state.valueSerializer.serialize((Long) value, dataOutputView);
+            byte[] serializedValue = dataOutputView.getCopyOfBuffer();
+
+
+            Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
+            backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
+
+            //            Fixed bug where we were using the wrong tuple to update the keys
+            dataOutputView.clear();
+            state.getNamespaceSerializer().serialize(state.getCurrentNamespace(), dataOutputView);
+            byte[] currentNamespace = dataOutputView.getCopyOfBuffer();
+
+            Tuple2<ByteBuffer, String> tupleForKeys =
+                    new Tuple2(ByteBuffer.wrap(currentNamespace), stateName);
+            HashSet<K> keyHash =
+                    backend.namespaceAndStateNameToKeys.getOrDefault(
+                            tupleForKeys, new HashSet<K>());
+            keyHash.add(key);
+
+            backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
+
+            backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this.state);
+            backend.stateNamesToKeysAndNamespaces
+                    .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
+                    .add(namespaceKeyStateNameTuple.f0);
+
+            // // persist to Redpanda
+            // // TODO: need right topic
+            // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
+        } catch (java.lang.Exception e) {
+            throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
     }
 
@@ -170,8 +219,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 curr = 0L;
             }
 
-            // Using update_ instead of update so that this.run() is not called recursively
-            state.update_(curr + 1);
+            this.makeUpdate((K) word_key, (V) (Long) (curr + 1));
 
             // Latency testing: after this point, the new value is available in the user-code
             if(curr_records < num_records){
