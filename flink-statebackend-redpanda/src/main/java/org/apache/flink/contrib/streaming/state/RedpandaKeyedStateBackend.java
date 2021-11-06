@@ -77,9 +77,6 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
     /** The key serializer. */
     protected final TypeSerializer<K> keySerializer;
 
-    // Our Redpanda thread
-    public Thread thread;
-
     SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
     private static final Map<Class<? extends StateDescriptor>, StateFactory> STATE_FACTORIES =
             Stream.of(
@@ -140,7 +137,6 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.namespaceKeyStatenameToValue = namespaceKeyStatenameToValue;
         this.stateNameToState = stateNameToState;
 
-        this.thread = new RedpandaConsumer<K, Long, String>(this);
 
         // For now, run the thread synchronously to test for correctness of keys
         // System.out.println("prior" + this.thread.getContextClassLoader());

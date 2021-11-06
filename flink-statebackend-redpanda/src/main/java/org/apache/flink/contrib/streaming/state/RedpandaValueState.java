@@ -60,6 +60,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
+    // Our Redpanda thread
+    public Thread thread;
+
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -82,7 +85,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.producer = this.createProducer();
         this.consumer = this.createConsumer();
 
-        this.backend.thread.run();
+        this.thread = new RedpandaConsumer<>(this.backend, this);
     }
 
     private KafkaProducer<Long, V> createProducer() {
@@ -195,12 +198,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     @Override
     public V value() {
 
-        // Code to get configurable variables:
-        // System.out.println("backend.stateToStateName.get(this): " + backend.stateToStateName.get(this));
-        // System.out.println("currentNamespace " + this.getCurrentNamespace());
-        // System.out.println("stateName " + getStateName());
-        // System.out.println("keySerializer " + keySerializer);
-        // System.out.println("valueSerializer " + valueSerializer);
+        // System.out.println("current key (should be last key, unaffected by redpanda): " + this.backend.getCurrentKey());
+        this.thread.run();
 
         try {
             byte[] valueBytes =

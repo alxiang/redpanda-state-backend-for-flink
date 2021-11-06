@@ -50,9 +50,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     // /** Serializer for the namespace. */
     // final TypeSerializer<N> namespaceSerializer;
     // /** Serializer for the state values. */
-    final TypeSerializer<V> valueSerializer;
+    private TypeSerializer<V> valueSerializer;
 
-    final TypeSerializer<K> keySerializer;
+    private TypeSerializer<K> keySerializer;
 
     private final SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
     SerializedCompositeKeyBuilder keyBuilder;
@@ -76,7 +76,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     Boolean latency_printed = false;
 
     public RedpandaConsumer(
-        RedpandaKeyedStateBackend<K> keyedBackend
+        RedpandaKeyedStateBackend<K> keyedBackend,
+        RedpandaValueState<K, N, V> state_
     ) {
         backend = keyedBackend;
 
@@ -93,16 +94,13 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
         stateName = "Word counter"; 
+        state = (RedpandaValueState<K, N, Long>) state_;
 
         // For PrintingJob, the namespace is VoidNamespace.
         // We can tell this by printing the namespace in ValueState.value()
         // ex: https://www.programcreek.com/java-api-examples/?api=org.apache.flink.runtime.state.VoidNamespace
         // currentNamespace = (N) VoidNamespace.INSTANCE;
         // namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
-               
-        // These should be user configured
-        keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
-        valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
     }
 
     private static Consumer<Long, String> createConsumer() {
@@ -261,26 +259,30 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             this.consumer = createConsumer();
         }
 
-        System.out.println("retrieving state from statename");
-        state = (RedpandaValueState<K, N, Long>) backend.stateNameToState.get(stateName);
-        System.out.println("retrieved: " + state);
+        // System.out.println("retrieving state from statename");
+        // state = (RedpandaValueState<K, N, Long>) backend.stateNameToState.get(stateName);
+        // These should be user configured
 
-        System.out.println("retrieving current key from state");
-        K key = backend.getCurrentKey();
-        System.out.println("retrieved: " + key);
+        keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
+        valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
+        // System.out.println("retrieved: " + state);
 
-        System.out.println("retrieving current key group from state");
-        int keygroup = backend.getCurrentKeyGroupIndex();
-        System.out.println("retrieved: " + keygroup);
+        // System.out.println("retrieving current key from state");
+        // K key = backend.getCurrentKey();
+        // System.out.println("retrieved: " + key);
 
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        System.out.println("debug classloader");
-        System.out.println(cl);
-        System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
+        // System.out.println("retrieving current key group from state");
+        // int keygroup = backend.getCurrentKeyGroupIndex();
+        // System.out.println("retrieved: " + keygroup);
+
+        // ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        // System.out.println("debug classloader");
+        // System.out.println(cl);
+        // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
         Integer i = 0;
         while (i < 1) {
             // System.out.println("Polling in RedpandaConsumer...");
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(0L);
+            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000L);
 
             if (consumerRecords.count() != 0) {
 
@@ -291,7 +293,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 break;
             }
             else {
-                // System.out.println("No records.");
+                System.out.println("No records.");
             }
 
             i += 1;
