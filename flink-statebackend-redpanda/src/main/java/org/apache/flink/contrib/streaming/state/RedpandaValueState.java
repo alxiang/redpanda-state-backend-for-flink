@@ -56,7 +56,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<Long, V> producer;
-    private KafkaConsumer<Long, String> consumer;
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
@@ -83,9 +82,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Create Redpanda producer
         this.producer = this.createProducer();
-        this.consumer = this.createConsumer();
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
+        this.thread.start();
     }
 
     private KafkaProducer<Long, V> createProducer() {
@@ -103,26 +102,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return new KafkaProducer<Long, V>(props);
     }
 
-    private KafkaConsumer<Long, String> createConsumer() {
-        final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                                    BOOTSTRAP_SERVERS);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG,
-                                    "RedpandaConsumer");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                LongDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                StringDeserializer.class.getName());
-  
-        // Create the consumer using props.
-        final KafkaConsumer<Long, String> consumer =
-                                    new KafkaConsumer<>(props);
-  
-        // Subscribe to the topic.
-        consumer.subscribe(Collections.singletonList(TOPIC));
-        return consumer;
-    }
-
     private boolean writeMessage(String TOPIC, V value) {
 
         final ProducerRecord<Long, V> record =
@@ -138,40 +117,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             this.producer.flush();
             return true;
         }
-    }
-
-    private boolean readRecords() {
-        // int count  = 0;
-        // while (count < 10) {
-
-        // format: (Long timestamp, String word)
-        final ConsumerRecords<Long, String> consumerRecords =
-                consumer.poll(10);
-        System.out.println("in readRecords");
-        System.out.println(consumerRecords.count());
-        if (consumerRecords.count() != 0){
-            consumerRecords.forEach(record -> {
-                System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
-                        record.key(), record.value(),
-                        record.partition(), record.offset());
-                this.update((V) record.value());
-
-                
-
-                // add records to intermediate map
-                /*
-                if map.get(record.value()) is None:
-                    map[record.value()] = 1
-                else:
-                    map[record.value()] = map[record.value()] + 1
-                */
-            });
-    
-            consumer.commitAsync();
-        }
-        return true;
-        // count += 1;
-        // }
     }
 
     @Override
@@ -199,7 +144,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() {
 
         // System.out.println("current key (should be last key, unaffected by redpanda): " + this.backend.getCurrentKey());
-        this.thread.run();
+        // this.thread.run();
 
         try {
             byte[] valueBytes =
