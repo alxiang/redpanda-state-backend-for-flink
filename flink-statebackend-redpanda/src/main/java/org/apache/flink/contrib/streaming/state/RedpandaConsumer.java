@@ -62,6 +62,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     // final N currentNamespace;
     RedpandaValueState<K, N, Long> state;
     
+    
 
     // For latency testing:
     // keep track of total latency over 100,000,000 records 
@@ -255,7 +256,39 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     // not sure if it is possible to reset the key
     public void run() {
 
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        System.out.println("debug classloader in redpandaconsumer");
+        System.out.println(cl);
+        System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
+
+        System.out.println("testing class loading...");
+        try {
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics"));
+
+            System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$FetchRequestData"));
+
+            System.out.println(cl.loadClass("org.apache.kafka.common.requests.FetchMetadata"));
+            System.out.println(cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData")); 
+
+            System.out.println(cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3")); 
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord"));
+            System.out.println(cl.loadClass("org.apache.kafka.common.metrics.stats.Value"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException"));
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         if(this.consumer == null){
+            // Thread.currentThread().setContextClassLoader(null);
             this.consumer = createConsumer();
         }
 
@@ -275,10 +308,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // int keygroup = backend.getCurrentKeyGroupIndex();
         // System.out.println("retrieved: " + keygroup);
 
-        // ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        // System.out.println("debug classloader");
-        // System.out.println(cl);
-        // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
         Integer i = 0;
         while (i < 1) {
             // System.out.println("Polling in RedpandaConsumer...");
@@ -298,8 +327,5 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
             i += 1;
         }
-
-        // TODO: If we had the previous key, we could reset it like this
-        // state.getSharedKeyNamespaceSerializer().setKeyAndKeyGroup((K) prev_key, 0);
     }
 }

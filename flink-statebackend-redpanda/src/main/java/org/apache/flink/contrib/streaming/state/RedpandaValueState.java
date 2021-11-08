@@ -56,6 +56,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<Long, V> producer;
+    private KafkaConsumer<Long, String> consumer;
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
@@ -82,8 +83,22 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Create Redpanda producer
         this.producer = this.createProducer();
+        this.consumer = this.createConsumer();
+        this.writeMessage("word_chat", (V) "word");
+        this.readRecords();
+
+        // this.consumer.close()
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        System.out.println("debug classloader in valuestate");
+        System.out.println(cl);
+        System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader());
+        
+        // org.apache.kafka.common.utils.Utils.ckass.
+        // this.thread.setContextClassLoader(cl);
+
         this.thread.start();
     }
 
@@ -92,7 +107,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             BOOTSTRAP_SERVERS);
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer");
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer (ValueState)");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                                         LongSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
@@ -101,6 +116,27 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // TODO: temporary types
         return new KafkaProducer<Long, V>(props);
     }
+
+    private KafkaConsumer<Long, String> createConsumer() {
+        final Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                    BOOTSTRAP_SERVERS);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG,
+                                    "RedpandaConsumer (ValueState)");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                LongDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+  
+        // Create the consumer using props.
+        final KafkaConsumer<Long, String> consumer =
+                                    new KafkaConsumer<>(props);
+  
+        // Subscribe to the topic.
+        consumer.subscribe(Collections.singletonList(TOPIC));
+        return consumer;
+    }
+
 
     private boolean writeMessage(String TOPIC, V value) {
 
@@ -117,6 +153,26 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             this.producer.flush();
             return true;
         }
+    }
+
+    private boolean readRecords() {
+
+        final ConsumerRecords<Long, String> consumerRecords =
+                consumer.poll(10);
+        System.out.println("in readRecords");
+        System.out.println(consumerRecords.count());
+        if (consumerRecords.count() != 0){
+            consumerRecords.forEach(record -> {
+                System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
+                        record.key(), record.value(),
+                        record.partition(), record.offset());
+                this.update((V) record.value());
+
+            });
+    
+            consumer.commitAsync();
+        }
+        return true;
     }
 
     @Override
