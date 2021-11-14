@@ -273,27 +273,30 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         try {
             System.out.println(cl.loadClass("org.apache.kafka.clients.NetworkClient$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription"));
-
             System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$FetchRequestData"));
 
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription"));
+
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractPartitionAssignor$MemberInfo"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.RequestFuture$2"));
+            
             System.out.println(cl.loadClass("org.apache.kafka.common.requests.FetchMetadata"));
             System.out.println(cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData")); 
-
             System.out.println(cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3")); 
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord"));
             System.out.println(cl.loadClass("org.apache.kafka.common.metrics.stats.Value"));
+
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2"));
