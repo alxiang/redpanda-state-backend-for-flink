@@ -3,8 +3,6 @@ package org.apache.flink.contrib.streaming.state;
 import java.util.Collections;
 import java.util.Properties;
 
-import com.typesafe.config.ConfigException.Null;
-
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -163,7 +161,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private void makeUpdate(K key, V value){
 
         keyBuilder.setKeyAndKeyGroup(key, 0);
-        System.out.println("TEST 1");
+        // System.out.println("TEST 1");
         if (value == null) {
             // TODO: unimplemented
             // clear();
@@ -171,11 +169,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
         try {
             dataOutputView.clear();
-            System.out.println("TEST 2");
+            // System.out.println("TEST 2");
             state.valueSerializer.serialize((Long) value, dataOutputView);
-            System.out.println("TEST 3");
+            // System.out.println("TEST 3");
             byte[] serializedValue = dataOutputView.getCopyOfBuffer();
-            System.out.println("TEST 4");
+            // System.out.println("TEST 4");
 
             Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
             backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
@@ -211,8 +209,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     private void processRecord(ConsumerRecord<String, String> record){
         System.out.println();
-        System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
-                record.partition(), record.offset());
+        // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
+        //         record.partition(), record.offset());
 
         try{
             // get the current state for the word and add 1 to it
@@ -241,18 +239,18 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 curr_records += 1;
             }
 
-            if((curr_records % 1000 == 0) && (curr_records < num_records)){
-                System.out.println("===LATENCY TESTING RESULTS===");
-                System.out.printf("Total Latency (from Producer): %f\n", 
-                    (float) total_latency_from_produced);
-                // System.out.printf("Total Latency (from WordSource): %f\n",
-                //     (float) total_latency_from_source);
-                System.out.printf("Average Latency (from Producer): %f\n", 
-                    (float) total_latency_from_produced / curr_records);
-                // System.out.printf("Average Latency (from WordSource): %f\n",
-                //     (float) total_latency_from_source / curr_records);
-                System.out.printf("Records processed: %d\n", curr_records);
-            }
+            // if((curr_records % 1000 == 0) && (curr_records < num_records)){
+            //     System.out.println("===LATENCY TESTING RESULTS===");
+            //     System.out.printf("Total Latency (from Producer): %f\n", 
+            //         (float) total_latency_from_produced);
+            //     // System.out.printf("Total Latency (from WordSource): %f\n",
+            //     //     (float) total_latency_from_source);
+            //     System.out.printf("Average Latency (from Producer): %f\n", 
+            //         (float) total_latency_from_produced / curr_records);
+            //     // System.out.printf("Average Latency (from WordSource): %f\n",
+            //     //     (float) total_latency_from_source / curr_records);
+            //     System.out.printf("Records processed: %d\n", curr_records);
+            // }
             // System.out.printf("updated state for %s to %d from %d\n", word_key, state.value(), curr);
         }
         catch (Exception exception){
@@ -267,46 +265,46 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        System.out.println("debug classloader in redpandaconsumer");
-        System.out.println(cl);
+        // System.out.println("debug classloader in redpandaconsumer");
+        // System.out.println(cl);
         // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
 
         try {
-            System.out.println(cl.loadClass("org.apache.kafka.clients.NetworkClient$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$FetchRequestData"));
+            cl.loadClass("org.apache.kafka.clients.NetworkClient$1");
+            cl.loadClass("org.apache.kafka.clients.FetchSessionHandler");
+            cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder");
+            cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$FetchRequestData");
 
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription"));
+            cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata");
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription");
 
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractPartitionAssignor$MemberInfo"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.RequestFuture$2"));
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractPartitionAssignor$MemberInfo");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.RequestFuture$2");
             
-            System.out.println(cl.loadClass("org.apache.kafka.common.requests.FetchMetadata"));
-            System.out.println(cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData")); 
-            System.out.println(cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3")); 
-            System.out.println(cl.loadClass("org.apache.kafka.common.metrics.stats.Value"));
+            cl.loadClass("org.apache.kafka.common.requests.FetchMetadata");
+            cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData");
+            cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3");
+            cl.loadClass("org.apache.kafka.common.metrics.stats.Value");
 
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2"));
-            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException"));
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord");
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable");
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2");
+            cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException");
 
-            System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1"));
-            System.out.println(cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState"));
-            System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$SearchState"));
-            System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$EntryPresence"));
-            System.out.println(cl.loadClass("net.openhft.chronicle.hash.impl.stage.entry.ChecksumHashing"));
+            cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1");
+            cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState");
+            cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$SearchState");
+            cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$EntryPresence");
+            cl.loadClass("net.openhft.chronicle.hash.impl.stage.entry.ChecksumHashing");
 
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
