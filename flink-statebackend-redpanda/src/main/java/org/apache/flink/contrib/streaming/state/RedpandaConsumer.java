@@ -39,7 +39,7 @@ Stuff to print in ValueState (configurations)
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
-    private Consumer<Long, String> consumer;
+    private Consumer<String, String> consumer;
 
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
@@ -104,11 +104,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
     }
 
-    private static Consumer<Long, String> createConsumer() {
+    private static Consumer<String, String> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "RedpandaPollingConsumer");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
+        // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         props.put("session.timeout.ms", 30000);
@@ -120,7 +121,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put("max.poll.records", 10000);
 
         // Create the consumer using props.
-        final Consumer<Long, String> consumer = new KafkaConsumer<>(props);
+        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
 
         // Subscribe to the topic.
         consumer.subscribe(Collections.singletonList(TOPIC));
@@ -162,7 +163,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private void makeUpdate(K key, V value){
 
         keyBuilder.setKeyAndKeyGroup(key, 0);
-
+        System.out.println("TEST 1");
         if (value == null) {
             // TODO: unimplemented
             // clear();
@@ -170,9 +171,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
         try {
             dataOutputView.clear();
+            System.out.println("TEST 2");
             state.valueSerializer.serialize((Long) value, dataOutputView);
+            System.out.println("TEST 3");
             byte[] serializedValue = dataOutputView.getCopyOfBuffer();
-
+            System.out.println("TEST 4");
 
             Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
             backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
@@ -200,26 +203,30 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             // // TODO: need right topic
             // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
         } catch (java.lang.Exception e) {
+            System.out.println("ERROR");
+            System.out.println(e);
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
     }
 
-    private void processRecord(ConsumerRecord<Long, String> record){
-        // System.out.println();
-        // System.out.printf("Consumer Record:(%d, %s, %d, %d)\n", record.key(), record.value(),
-        //         record.partition(), record.offset());
+    private void processRecord(ConsumerRecord<String, String> record){
+        System.out.println();
+        System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
+                record.partition(), record.offset());
 
         try{
-            String word_key = record.value();
             // get the current state for the word and add 1 to it
-            Long curr = (Long) this.getValue((K) word_key);
             // System.out.printf("Retrieved state value: %d\n", curr);
-            if(curr == null){
-                curr = 0L;
-            }
-
-            this.makeUpdate((K) word_key, (V) (Long) (curr + 1));
-
+            // if(curr == null){
+            //     curr = 0L;
+            // }
+            String word_key = record.key();
+            Long value = Long.parseLong(record.value());
+            
+            System.out.println("PROCESSING RECORD BEFORE MAKE UPDATE");
+            this.makeUpdate((K) word_key, (V) value);
+            
+            System.out.println("PROCESSING RECORD AFTER MAKE UPDATE");
             // Latency testing: after this point, the new value is available in the user-code
             if(curr_records < num_records){
                 long currentTime = System.currentTimeMillis();
@@ -227,8 +234,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 total_latency_from_produced += (currentTime - record.timestamp());
                 assert(currentTime - record.timestamp() > 0);
 
-                total_latency_from_source += (currentTime - record.key());
-                assert(currentTime - record.key() > 0);
+                //I changed the keys to be words so I'll comment out this latency test. We'll need to change our benchmarks anyway
+                // total_latency_from_source += (currentTime - record.key());
+                // assert(currentTime - record.key() > 0);
                 
                 curr_records += 1;
             }
@@ -237,12 +245,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 System.out.println("===LATENCY TESTING RESULTS===");
                 System.out.printf("Total Latency (from Producer): %f\n", 
                     (float) total_latency_from_produced);
-                System.out.printf("Total Latency (from WordSource): %f\n",
-                    (float) total_latency_from_source);
+                // System.out.printf("Total Latency (from WordSource): %f\n",
+                //     (float) total_latency_from_source);
                 System.out.printf("Average Latency (from Producer): %f\n", 
                     (float) total_latency_from_produced / curr_records);
-                System.out.printf("Average Latency (from WordSource): %f\n",
-                    (float) total_latency_from_source / curr_records);
+                // System.out.printf("Average Latency (from WordSource): %f\n",
+                //     (float) total_latency_from_source / curr_records);
                 System.out.printf("Records processed: %d\n", curr_records);
             }
             // System.out.printf("updated state for %s to %d from %d\n", word_key, state.value(), curr);
@@ -263,8 +271,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         System.out.println("testing class loading...");
         try {
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics"));
 
@@ -282,6 +293,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException"));
+            // System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompçiledMapQueryContext$1"));
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -311,8 +323,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         Integer i = 0;
         while (i < 1) {
             // System.out.println("Polling in RedpandaConsumer...");
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000L);
-
+            final ConsumerRecords<String, String> consumerRecords = consumer.poll(1000L);
+            System.out.println("I am polling!");
             if (consumerRecords.count() != 0) {
 
                 System.out.println("Num consumer records " + consumerRecords.count());

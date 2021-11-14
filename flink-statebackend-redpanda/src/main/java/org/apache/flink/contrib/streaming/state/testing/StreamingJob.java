@@ -61,38 +61,38 @@ public class StreamingJob {
 
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
-	private static KafkaProducer<Long, String> createProducer() {
-        // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
-        Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                                            BOOTSTRAP_SERVERS);
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaExampleProducer");
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                                    LongSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                                    StringSerializer.class.getName());
-		props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 60000); // lower timeout than default for debugging
+	// private static KafkaProducer<Long, String> createProducer() {
+    //     // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
+    //     Properties props = new Properties();
+    //     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+    //                                         BOOTSTRAP_SERVERS);
+    //     props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaExampleProducer");
+    //     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+    //                                 LongSerializer.class.getName());
+    //     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+    //                                 StringSerializer.class.getName());
+	// 	props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 60000); // lower timeout than default for debugging
 
-        // TODO: temporary types
-        return new KafkaProducer<Long, String>(props);
-    }
+    //     // TODO: temporary types
+    //     return new KafkaProducer<Long, String>(props);
+    // }
 
-    private static boolean writeMessage(String TOPIC, String value, KafkaProducer<Long, String> producer) {
+    // private static boolean writeMessage(String TOPIC, String value, KafkaProducer<Long, String> producer) {
 
-        final ProducerRecord<Long, String> record =
-                        new ProducerRecord<Long, String>(TOPIC, 0L, value);
+    //     final ProducerRecord<Long, String> record =
+    //                     new ProducerRecord<Long, String>(TOPIC, 0L, value);
 
-        try {
-            final RecordMetadata metadata = producer.send(record).get(); 
-        }
-        catch(Exception e) {
-            return false;
-        }
-        finally {
-            producer.flush();
-            return true;
-        }
-    }
+    //     try {
+    //         final RecordMetadata metadata = producer.send(record).get(); 
+    //     }
+    //     catch(Exception e) {
+    //         return false;
+    //     }
+    //     finally {
+    //         producer.flush();
+    //         return true;
+    //     }
+    // }
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment

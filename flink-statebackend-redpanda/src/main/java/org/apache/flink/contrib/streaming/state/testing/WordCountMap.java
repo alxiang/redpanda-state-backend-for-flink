@@ -19,11 +19,11 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
 
         // access state value
         Long currentCount = count.value();
-        currentCount = currentCount == null ? 1L : currentCount + 1L;
 
         // update count
-        currentCount += 1;
-
+        currentCount = currentCount == null ? 1L : currentCount + 1L;
+        // currentCount += 1; I commented out this extra +1 since I wasn't sure why we had it
+        
         // update the state
         count.update(currentCount);
         

@@ -55,8 +55,8 @@ import java.util.Map;
 class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
-    private KafkaProducer<Long, V> producer;
-    private KafkaConsumer<Long, String> consumer;
+    private KafkaProducer<String, V> producer;
+    private KafkaConsumer<String, String> consumer;
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
@@ -84,7 +84,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // Create Redpanda producer
         this.producer = this.createProducer();
         this.consumer = this.createConsumer();
-        this.writeMessage("word_chat", (V) "word");
+        this.writeMessage("word_chat", "word", (V) "1");
         this.readRecords();
 
         // this.consumer.close()
@@ -102,34 +102,40 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.thread.start();
     }
 
-    private KafkaProducer<Long, V> createProducer() {
+    private KafkaProducer<String, V> createProducer() {
         // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             BOOTSTRAP_SERVERS);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer (ValueState)");
+
+        //Used String Keys and commented out version with Long keys
+        // props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+        //                                 LongSerializer.class.getName());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                                        LongSerializer.class.getName());
+                                        StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                                     StringSerializer.class.getName());
 
         // TODO: temporary types
-        return new KafkaProducer<Long, V>(props);
+        return new KafkaProducer<String, V>(props);
     }
 
-    private KafkaConsumer<Long, String> createConsumer() {
+    private KafkaConsumer<String, String> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                     BOOTSTRAP_SERVERS);
         props.put(ConsumerConfig.GROUP_ID_CONFIG,
                                     "RedpandaConsumer (ValueState)");
+        // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+        //         LongDeserializer.class.getName());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                LongDeserializer.class.getName());
+                StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 StringDeserializer.class.getName());
   
         // Create the consumer using props.
-        final KafkaConsumer<Long, String> consumer =
+        final KafkaConsumer<String, String> consumer =
                                     new KafkaConsumer<>(props);
   
         // Subscribe to the topic.
@@ -138,15 +144,20 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
 
-    private boolean writeMessage(String TOPIC, V value) {
+    private boolean writeMessage(String TOPIC, String key, V value) {
 
-        final ProducerRecord<Long, V> record =
-                        new ProducerRecord<Long, V>(TOPIC, 0L, value);
+        final ProducerRecord<String, V> record =
+                        new ProducerRecord<String, V>(TOPIC, key, value);
 
         try {
+            System.out.println("ABOUT TO SEND RECORD");
             final RecordMetadata metadata = this.producer.send(record).get(); 
+            System.out.println(metadata);
+            System.out.println("SENT RECORD");
         }
         catch(Exception e) {
+            System.out.println("ERROR SENDING RECORD");
+            System.out.println(e);
             return false;
         }
         finally {
@@ -157,16 +168,16 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     private boolean readRecords() {
 
-        final ConsumerRecords<Long, String> consumerRecords =
+        final ConsumerRecords<String, String> consumerRecords =
                 consumer.poll(10);
         System.out.println("in readRecords");
         System.out.println(consumerRecords.count());
         if (consumerRecords.count() != 0){
             consumerRecords.forEach(record -> {
-                System.out.printf("Consumer Record:(%d, %s, %d, %d)\n",
+                System.out.printf("Consumer Record:(%s, %s, %d, %d)\n",
                         record.key(), record.value(),
                         record.partition(), record.offset());
-                this.update((V) record.value());
+                this.update_((V) record.value());
 
             });
     
@@ -218,35 +229,40 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     @Override
     public void update(V value) {
-        if (value == null) {
-            clear();
-            return;
-        }
+        // if (value == null) {
+        //     clear();
+        //     return;
+        // }
         try {
-            byte[] serializedValue = serializeValue(value, valueSerializer);
-            Tuple2<byte[], String> namespaceKeyStateNameTuple = getNamespaceKeyStateNameTuple();
-            backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
+            // byte[] serializedValue = serializeValue(value, valueSerializer);
+            // Tuple2<byte[], String> namespaceKeyStateNameTuple = getNamespaceKeyStateNameTuple();
+            // backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
 
-            //            Fixed bug where we were using the wrong tuple to update the keys
-            byte[] currentNamespace = serializeCurrentNamespace();
+            // //            Fixed bug where we were using the wrong tuple to update the keys
+            // byte[] currentNamespace = serializeCurrentNamespace();
 
-            Tuple2<ByteBuffer, String> tupleForKeys =
-                    new Tuple2(ByteBuffer.wrap(currentNamespace), getStateName());
-            HashSet<K> keyHash =
-                    backend.namespaceAndStateNameToKeys.getOrDefault(
-                            tupleForKeys, new HashSet<K>());
-            keyHash.add(backend.getCurrentKey());
+            // Tuple2<ByteBuffer, String> tupleForKeys =
+            //         new Tuple2(ByteBuffer.wrap(currentNamespace), getStateName());
+            // HashSet<K> keyHash =
+            //         backend.namespaceAndStateNameToKeys.getOrDefault(
+            //                 tupleForKeys, new HashSet<K>());
+            // keyHash.add(backend.getCurrentKey());
 
-            backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
+            // backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
 
-            backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this);
-            backend.stateNamesToKeysAndNamespaces
-                    .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
-                    .add(namespaceKeyStateNameTuple.f0);
+            // backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this);
+            // backend.stateNamesToKeysAndNamespaces
+            //         .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
+            //         .add(namespaceKeyStateNameTuple.f0);
 
             // // persist to Redpanda
-            // // TODO: need right topic
+            System.out.println("UPDATING VALUE");
+            System.out.printf("key: %s, value: %s\n", (String) backend.getCurrentKey(), String.valueOf(value));
+
+            // currently topic is hard-coded to word_chat since that is what the consumer is subscribed to
+            // This could possibly changed to the state decriptor name for the value state idk
             // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
+            this.writeMessage("word_chat", (String) backend.getCurrentKey(), (V) String.valueOf(value));
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
