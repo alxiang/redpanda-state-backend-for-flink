@@ -61,7 +61,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     // Our Redpanda thread
-    public Thread thread;
+    public RedpandaConsumer thread;
 
 
     /**
@@ -83,22 +83,22 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Create Redpanda producer
         this.producer = this.createProducer();
-        this.consumer = this.createConsumer();
-        this.writeMessage("word_chat", "word", (V) "1");
-        this.readRecords();
+        // this.consumer = this.createConsumer();
+        // this.writeMessage("word_chat", "word", (V) "1");
+        // this.readRecords();
 
-        this.consumer.close();
+        // this.consumer.close();
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
-        this.thread.setPriority(8);
+        this.thread.initialize();
+        this.thread.setPriority(10);
+        this.thread.start();
 
         // ClassLoader cl = Thread.currentThread().getContextClassLoader();
         // System.out.println("debug classloader in valuestate");
         // System.out.println(cl);
         // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader());
         // this.thread.setContextClassLoader(cl);
-
-        this.thread.start();
     }
 
     private KafkaProducer<String, V> createProducer() {

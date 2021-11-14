@@ -259,10 +259,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             System.out.println("Exception in processRecord(): " + exception);
         }
     }
-    
-    // NOTE: this does not reset the key to what is was before
-    // not sure if it is possible to reset the key
-    public void run() {
+
+    // call this synchronously before running the thread
+    public void initialize() {
+        if(this.consumer == null){
+            this.consumer = createConsumer();
+        }
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         System.out.println("debug classloader in redpandaconsumer");
@@ -280,6 +282,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription"));
 
             System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder"));
@@ -306,18 +309,18 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        if(this.consumer == null){
-            // Thread.currentThread().setContextClassLoader(null);
-            this.consumer = createConsumer();
-        }
+    }
+    
+    // NOTE: this does not reset the key to what is was before
+    // not sure if it is possible to reset the key
+    public void run() {
 
         keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
         valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
 
         while (true) {
             System.out.println("[REDPANDACONSUMER] About to poll!");
-            final ConsumerRecords<String, String> consumerRecords = consumer.poll(0L);
+            final ConsumerRecords<String, String> consumerRecords = consumer.poll(100L);
             System.out.println("[REDPANDACONSUMER] I am polling!");
             if (consumerRecords.count() != 0) {
 
