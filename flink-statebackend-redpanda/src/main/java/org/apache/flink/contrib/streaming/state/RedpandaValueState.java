@@ -150,7 +150,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         try {
             // System.out.println("ABOUT TO SEND RECORD");
-            final RecordMetadata metadata = this.producer.send(record).get(); 
+            // final RecordMetadata metadata = 
+            this.producer.send(record);//.get(); 
             // System.out.println(metadata);
             // System.out.println("SENT RECORD");
             // System.out.println();
@@ -161,7 +162,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             return false;
         }
         finally {
-            this.producer.flush();
+            // this.producer.flush();
             return true;
         }
     }
