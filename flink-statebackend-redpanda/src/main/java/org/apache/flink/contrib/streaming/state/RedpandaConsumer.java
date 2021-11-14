@@ -208,7 +208,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     }
 
     private void processRecord(ConsumerRecord<String, String> record){
-        System.out.println();
+        // System.out.println();
         // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
         //         record.partition(), record.offset());
 
@@ -221,10 +221,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             String word_key = record.key();
             Long value = Long.parseLong(record.value());
             
-            System.out.println("PROCESSING RECORD BEFORE MAKE UPDATE");
-            this.makeUpdate((K) word_key, (V) value);
+            // System.out.println("PROCESSING RECORD BEFORE MAKE UPDATE");
+            // this.makeUpdate((K) word_key, (V) value);
+            this.makeUpdate((K) Long.valueOf(word_key), (V) value);
             
-            System.out.println("PROCESSING RECORD AFTER MAKE UPDATE");
+            // System.out.println("PROCESSING RECORD AFTER MAKE UPDATE");
             // Latency testing: after this point, the new value is available in the user-code
             if(curr_records < num_records){
                 long currentTime = System.currentTimeMillis();
@@ -320,19 +321,19 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
 
         while (true) {
-            System.out.println("[REDPANDACONSUMER] About to poll!");
+            // System.out.println("[REDPANDACONSUMER] About to poll!");
             final ConsumerRecords<String, String> consumerRecords = consumer.poll(100L);
-            System.out.println("[REDPANDACONSUMER] I am polling!");
+            // System.out.println("[REDPANDACONSUMER] I am polling!");
             if (consumerRecords.count() != 0) {
 
-                System.out.println("Num consumer records " + consumerRecords.count());
+                // System.out.println("Num consumer records " + consumerRecords.count());
 
                 consumerRecords.forEach(record -> processRecord(record));
                 consumer.commitAsync();
                 break;
             }
             else {
-                System.out.println("No records.");
+                // System.out.println("No records.");
             }
         }
     }

@@ -63,6 +63,7 @@ import java.util.LinkedHashMap;
  *
  * @param <K> The data type that the key serializer serializes.
  */
+@SuppressWarnings("unchecked")
 public class RedpandaKeyedStateBackendBuilder<K> extends AbstractKeyedStateBackendBuilder<K> {
     /** String that identifies the operator that owns this backend. */
     private final String operatorIdentifier;

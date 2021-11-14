@@ -34,7 +34,7 @@ public class RedpandaStateBackend extends AbstractManagedMemoryStateBackend
 
     /** Creates a new {@code MemoryMappedStateBackend} for storing local state. */
     public RedpandaStateBackend() {
-        System.out.println("RedpandaStateBackend instantiated");
+        // System.out.println("RedpandaStateBackend instantiated");
     }
 
     /**
