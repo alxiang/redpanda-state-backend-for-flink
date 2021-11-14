@@ -267,10 +267,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         System.out.println("debug classloader in redpandaconsumer");
         System.out.println(cl);
-        System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
+        // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
 
-        System.out.println("testing class loading...");
         try {
+
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata"));
@@ -293,7 +294,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException"));
-            // System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompçiledMapQueryContext$1"));
+
+            System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1"));
+            System.out.println(cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState"));
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -304,24 +307,10 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             this.consumer = createConsumer();
         }
 
-        // System.out.println("retrieving state from statename");
-        // state = (RedpandaValueState<K, N, Long>) backend.stateNameToState.get(stateName);
-        // These should be user configured
-
         keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
         valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
-        // System.out.println("retrieved: " + state);
 
-        // System.out.println("retrieving current key from state");
-        // K key = backend.getCurrentKey();
-        // System.out.println("retrieved: " + key);
-
-        // System.out.println("retrieving current key group from state");
-        // int keygroup = backend.getCurrentKeyGroupIndex();
-        // System.out.println("retrieved: " + keygroup);
-
-        Integer i = 0;
-        while (i < 1) {
+        while (true) {
             // System.out.println("Polling in RedpandaConsumer...");
             final ConsumerRecords<String, String> consumerRecords = consumer.poll(1000L);
             System.out.println("I am polling!");
@@ -336,8 +325,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             else {
                 System.out.println("No records.");
             }
-
-            i += 1;
         }
     }
 }

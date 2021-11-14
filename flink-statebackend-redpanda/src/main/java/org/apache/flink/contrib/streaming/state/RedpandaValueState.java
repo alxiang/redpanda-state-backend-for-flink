@@ -91,12 +91,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
 
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        System.out.println("debug classloader in valuestate");
-        System.out.println(cl);
-        System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader());
-        
-        // org.apache.kafka.common.utils.Utils.ckass.
+        // ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        // System.out.println("debug classloader in valuestate");
+        // System.out.println(cl);
+        // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader());
         // this.thread.setContextClassLoader(cl);
 
         this.thread.start();
@@ -154,6 +152,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             final RecordMetadata metadata = this.producer.send(record).get(); 
             System.out.println(metadata);
             System.out.println("SENT RECORD");
+            System.out.println();
         }
         catch(Exception e) {
             System.out.println("ERROR SENDING RECORD");
@@ -256,7 +255,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             //         .add(namespaceKeyStateNameTuple.f0);
 
             // // persist to Redpanda
-            System.out.println("UPDATING VALUE");
+            System.out.println("UPDATING VALUE (WRITING THROUGH TO REDPANDA)");
             System.out.printf("key: %s, value: %s\n", (String) backend.getCurrentKey(), String.valueOf(value));
 
             // currently topic is hard-coded to word_chat since that is what the consumer is subscribed to
@@ -266,12 +265,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
-
-        // NOTE: we are running our Redpanda backend update code here because
-        //       the system should automatically switch keys
-        //       when the ValueState's key switches in the user space 
-        // System.out.println("running redpanda thread\n");
-        // backend.thread.run();
     }
 
     // update without the Redpanda reading
@@ -302,9 +295,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                     .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
                     .add(namespaceKeyStateNameTuple.f0);
 
-            // // persist to Redpanda
-            // // TODO: need right topic
-            // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
