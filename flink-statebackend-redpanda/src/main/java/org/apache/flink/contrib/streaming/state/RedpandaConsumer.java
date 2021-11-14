@@ -112,13 +112,13 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
-        props.put("session.timeout.ms", 30000);
-        props.put("max.poll.interval.ms", 43200000);
-        props.put("request.timeout.ms", 43205000);
+        // props.put("session.timeout.ms", 30000);
+        // props.put("max.poll.interval.ms", 43200000);
+        // props.put("request.timeout.ms", 43205000);
 
         // performance configs
-        props.put("fetch.min.bytes", 100000000);
-        props.put("max.poll.records", 10000);
+        // props.put("fetch.min.bytes", 100000000);
+        // props.put("max.poll.records", 10000);
 
         // Create the consumer using props.
         final Consumer<String, String> consumer = new KafkaConsumer<>(props);
@@ -270,7 +270,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
 
         try {
-
+            System.out.println(cl.loadClass("org.apache.kafka.clients.NetworkClient$1"));
+            System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData"));
             System.out.println(cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult"));
@@ -297,6 +298,10 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
             System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1"));
             System.out.println(cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState"));
+            System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$SearchState"));
+            System.out.println(cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$EntryPresence"));
+            System.out.println(cl.loadClass("net.openhft.chronicle.hash.impl.stage.entry.ChecksumHashing"));
+
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -311,9 +316,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
 
         while (true) {
-            // System.out.println("Polling in RedpandaConsumer...");
-            final ConsumerRecords<String, String> consumerRecords = consumer.poll(1000L);
-            System.out.println("I am polling!");
+            System.out.println("[REDPANDACONSUMER] About to poll!");
+            final ConsumerRecords<String, String> consumerRecords = consumer.poll(0L);
+            System.out.println("[REDPANDACONSUMER] I am polling!");
             if (consumerRecords.count() != 0) {
 
                 System.out.println("Num consumer records " + consumerRecords.count());

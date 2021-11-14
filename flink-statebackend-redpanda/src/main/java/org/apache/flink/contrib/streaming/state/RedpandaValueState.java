@@ -87,9 +87,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.writeMessage("word_chat", "word", (V) "1");
         this.readRecords();
 
-        // this.consumer.close()
+        this.consumer.close();
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
+        this.thread.setPriority(8);
 
         // ClassLoader cl = Thread.currentThread().getContextClassLoader();
         // System.out.println("debug classloader in valuestate");
