@@ -116,6 +116,13 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                                     StringSerializer.class.getName());
 
+        // https://stackoverflow.com/questions/51521737/apache-kafka-linger-ms-and-batch-size-settings
+        // https://stackoverflow.com/questions/66045267/kafka-setting-high-linger-ms-and-batch-size-not-helping
+        // 1MB, 50ms linger gives ~1800 throughput
+        // compression didn't help
+        props.put("batch.size", 1024*1024); // 32MB
+        props.put("linger.ms", 50);
+
         // TODO: temporary types
         return new KafkaProducer<String, V>(props);
     }

@@ -110,13 +110,13 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
-        // props.put("session.timeout.ms", 30000);
-        // props.put("max.poll.interval.ms", 43200000);
-        // props.put("request.timeout.ms", 43205000);
+        props.put("session.timeout.ms", 30000);
+        props.put("max.poll.interval.ms", 43200000);
+        props.put("request.timeout.ms", 43205000);
 
         // performance configs
-        // props.put("fetch.min.bytes", 100000000);
-        // props.put("max.poll.records", 10000);
+        props.put("fetch.min.bytes", 100000000);
+        props.put("max.poll.records", 10000);
 
         // Create the consumer using props.
         final Consumer<String, String> consumer = new KafkaConsumer<>(props);
