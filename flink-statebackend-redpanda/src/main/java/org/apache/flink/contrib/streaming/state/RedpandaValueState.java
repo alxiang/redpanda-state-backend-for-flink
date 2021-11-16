@@ -62,6 +62,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     // Our Redpanda thread
     public RedpandaConsumer thread;
+    private int i = 0;
 
 
     /**
@@ -164,7 +165,13 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     @Override
     public V value() {
 
-        this.thread.run();
+        // call the poll every 10000 calls to value()
+        if(i % 10000 == 0){
+            this.thread.run();
+            i = 0;
+        }
+        i += 1;
+        
 
         // System.out.println("current key (should be last key, unaffected by redpanda): " + this.backend.getCurrentKey());
         // this.thread.run();

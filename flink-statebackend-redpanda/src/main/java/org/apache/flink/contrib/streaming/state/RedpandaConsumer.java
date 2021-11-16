@@ -64,7 +64,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     // For latency testing:
     // keep track of total latency over 500,000 records
-    Integer num_records = 500_000;
+    Integer num_records = 100_000_000;
     Integer curr_records = 0;
 
     // currentTimeMillis - record.timestamp()
@@ -105,7 +105,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private static Consumer<String, String> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.0");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-3.0");
         // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -116,7 +116,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         // performance configs
         // props.put("fetch.min.bytes", 100000000);
-        props.put("max.poll.records", 10000);
+        props.put("max.poll.records", 250000);
 
         // Create the consumer using props.
         final Consumer<String, String> consumer = new KafkaConsumer<>(props);
@@ -327,12 +327,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // System.out.println("[REDPANDACONSUMER] I am polling!");
         if (consumerRecords.count() != 0) {
 
-            System.out.println("Num consumer records " + consumerRecords.count());
+            // System.out.println("Num consumer records " + consumerRecords.count());
 
             consumerRecords.forEach(record -> processRecord(record));
             consumer.commitAsync();
 
-            System.out.println("Processed records");
+            // System.out.println("Processed records");
             // break;
         }
         else {
