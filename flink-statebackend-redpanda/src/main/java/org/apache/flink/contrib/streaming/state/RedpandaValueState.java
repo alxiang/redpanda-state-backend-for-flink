@@ -88,8 +88,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
         this.thread.initialize();
-        // this.thread.setPriority(10);
-        // this.thread.start();
+        this.thread.setPriority(10);
+        this.thread.start();
     }
 
     private KafkaProducer<String, V> createProducer() {
@@ -167,11 +167,11 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() {
 
         // call the poll every 10000 calls to value()
-        if(i % 10000 == 0){
-            this.thread.run();
-            i = 0;
-        }
-        i += 1;
+        // if(i % 10000 == 0){
+        //     this.thread.run();
+        //     i = 0;
+        // }
+        // i += 1;
 
         // call the poll every 100ms (wall clock)
         // System.out.printf("%d %d %d %b\n", System.currentTimeMillis(), j, System.currentTimeMillis() - j, System.currentTimeMillis() - j >= 100);

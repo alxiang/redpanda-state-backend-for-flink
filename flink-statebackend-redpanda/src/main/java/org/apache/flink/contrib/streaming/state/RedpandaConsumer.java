@@ -323,23 +323,23 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
         valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
 
-        // while (true) {
-        // System.out.println("[REDPANDACONSUMER] About to poll!");
-        final ConsumerRecords<String, String> consumerRecords = consumer.poll(0L);
-        // System.out.println("[REDPANDACONSUMER] I am polling!");
-        if (consumerRecords.count() != 0) {
+        while (true) {
+            // System.out.println("[REDPANDACONSUMER] About to poll!");
+            final ConsumerRecords<String, String> consumerRecords = consumer.poll(0L);
+            // System.out.println("[REDPANDACONSUMER] I am polling!");
+            if (consumerRecords.count() != 0) {
 
-            System.out.println("Num consumer records " + consumerRecords.count());
+                System.out.println("Num consumer records " + consumerRecords.count());
 
-            consumerRecords.forEach(record -> processRecord(record));
-            consumer.commitAsync();
+                consumerRecords.forEach(record -> processRecord(record));
+                consumer.commitAsync();
 
-            // System.out.println("Processed records");
-            // break;
+                // System.out.println("Processed records");
+                // break;
+            }
+            else {
+                // System.out.println("No records.");
+            }
         }
-        else {
-            // System.out.println("No records.");
-        }
-        // }
     }
 }
