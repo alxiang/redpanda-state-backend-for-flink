@@ -28,12 +28,6 @@ import java.util.HashSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.common.state.State;
 
-/*
-Stuff to print in ValueState (configurations)
-- this.backend.stateToStateName.get(this) -> stateName
-- currentNamespace and the stateName
-- keySerializer and valueSerializer
-*/
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
@@ -45,11 +39,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     protected final DataOutputSerializer dataOutputView;
     protected final DataInputDeserializer dataInputView;   
 
-    // /** Serializer for the namespace. */
-    // final TypeSerializer<N> namespaceSerializer;
     // /** Serializer for the state values. */
     private TypeSerializer<V> valueSerializer;
-
     private TypeSerializer<K> keySerializer;
 
     private final SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
@@ -57,19 +48,14 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     // configured!
     final String stateName;
-    // final N currentNamespace;
     RedpandaValueState<K, N, Long> state;
 
-    // For latency testing:
-    // keep track of total latency over 100,000 records
+    // For latency testing, keeping track of total latency over 100,000 records
     Integer num_records = 100_000;
     Integer curr_records = 0;
     Integer warmup = 25;
 
-    // currentTimeMillis - record.timestamp()
     Long total_latency_from_produced = 0L;
-    // currentTimeMillis - record.key()
-    Long total_latency_from_source = 0L;
 
     Boolean latency_printed = false;
 
@@ -93,12 +79,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
         stateName = "Word counter"; 
         state = (RedpandaValueState<K, N, Long>) state_;
-
-        // For PrintingJob, the namespace is VoidNamespace.
-        // We can tell this by printing the namespace in ValueState.value()
-        // ex: https://www.programcreek.com/java-api-examples/?api=org.apache.flink.runtime.state.VoidNamespace
-        // currentNamespace = (N) VoidNamespace.INSTANCE;
-        // namespaceSerializer = (TypeSerializer<N>) VoidNamespaceSerializer.INSTANCE;
     }
 
     private static Consumer<String, String> createConsumer() {
@@ -109,11 +89,10 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
+        // performance configs
         props.put("session.timeout.ms", 30000);
         props.put("max.poll.interval.ms", 43200000);
         props.put("request.timeout.ms", 43205000);
-
-        // performance configs
         // props.put("fetch.min.bytes", 100000000);
         props.put("max.poll.records", 250000);
 
@@ -160,7 +139,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private void makeUpdate(K key, V value){
 
         keyBuilder.setKeyAndKeyGroup(key, 0);
-        // System.out.println("TEST 1");
         if (value == null) {
             // TODO: unimplemented
             // clear();
@@ -168,16 +146,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
         try {
             dataOutputView.clear();
-            // System.out.println("TEST 2");
             state.valueSerializer.serialize((Long) value, dataOutputView);
-            // System.out.println("TEST 3");
             byte[] serializedValue = dataOutputView.getCopyOfBuffer();
-            // System.out.println("TEST 4");
 
             Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
             backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
 
-            //            Fixed bug where we were using the wrong tuple to update the keys
             dataOutputView.clear();
             state.getNamespaceSerializer().serialize(state.getCurrentNamespace(), dataOutputView);
             byte[] currentNamespace = dataOutputView.getCopyOfBuffer();
@@ -195,11 +169,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             backend.stateNamesToKeysAndNamespaces
                     .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
                     .add(namespaceKeyStateNameTuple.f0);
-
-            // // persist to Redpanda
-            // // TODO: need right topic
-            // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
-        } catch (java.lang.Exception e) {
+        } 
+        catch (java.lang.Exception e) {
             System.out.println("ERROR");
             System.out.println(e);
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
@@ -207,24 +178,16 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     }
 
     private void processRecord(ConsumerRecord<String, String> record){
-        // System.out.println();
         // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
         //         record.partition(), record.offset());
 
         try{
-            // get the current state for the word and add 1 to it
-            // System.out.printf("Retrieved state value: %d\n", curr);
-            // if(curr == null){
-            //     curr = 0L;
-            // }
             String word_key = record.key();
             Long value = Long.parseLong(record.value());
             
-            // System.out.println("PROCESSING RECORD BEFORE MAKE UPDATE");
-            // this.makeUpdate((K) word_key, (V) value);
+            // TODO: keys must be of type long -- find dynamic way to do this
             this.makeUpdate((K) Long.valueOf(word_key), (V) value);
             
-            // System.out.println("PROCESSING RECORD AFTER MAKE UPDATE");
             // Latency testing: after this point, the new value is available in the user-code
             if(curr_records < num_records){
                 long currentTime = System.currentTimeMillis();
@@ -243,13 +206,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 else{
                     System.out.println("===LATENCY TESTING RESULTS===");
                 }
-                // System.out.printf("Total Latency (from Producer): %f\n", 
-                //     (float) total_latency_from_produced);
 
                 System.out.printf("Average Latency (from Producer): %f\n\n", 
                     (float) total_latency_from_produced / curr_records);
-
-                // System.out.printf("Records processed: %d\n", curr_records);
       
                 curr_records = 0;
                 total_latency_from_produced = 0L;
@@ -268,9 +227,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        // System.out.println("debug classloader in redpandaconsumer");
-        // System.out.println(cl);
-        // System.out.println(org.apache.kafka.common.utils.Utils.class.getClassLoader()); 
 
         try {
             cl.loadClass("org.apache.kafka.clients.NetworkClient$1");
@@ -316,12 +272,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
     
-    // NOTE: this does not reset the key to what is was before
-    // not sure if it is possible to reset the key
+    // this can be called asynchronously, i.e. with thread.start(), which does not block the main thread
+    // or it can be called synchronousy, i.e. with thread.run(), which does block the main thread
     public void run() {
 
-        keySerializer = (TypeSerializer<K>) state.keySerializer; //(TypeSerializer<K>) new StringSerializer();
-        valueSerializer = (TypeSerializer<V>) state.valueSerializer; // (TypeSerializer<V>) new LongSerializer();
+        keySerializer = (TypeSerializer<K>) state.keySerializer;
+        valueSerializer = (TypeSerializer<V>) state.valueSerializer;
 
         // while (true) {
         // System.out.println("[REDPANDACONSUMER] About to poll!");
@@ -335,7 +291,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             consumer.commitAsync();
 
             // System.out.println("Processed records");
-            // break;
         }
         else {
             // System.out.println("No records.");

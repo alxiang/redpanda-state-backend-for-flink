@@ -56,15 +56,14 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private KafkaProducer<String, V> producer;
-    private KafkaConsumer<String, String> consumer;
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
     // Our Redpanda thread
     public RedpandaConsumer thread;
+    // Used for synchronous polling frequency
     private int i = 0;
     private long j = 0L;
-
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -99,9 +98,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                                             BOOTSTRAP_SERVERS);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer (ValueState)");
 
-        //Used String Keys and commented out version with Long keys
-        // props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-        //                                 LongSerializer.class.getName());
+        // Using String keys always
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                                         StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
@@ -109,9 +106,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // https://stackoverflow.com/questions/51521737/apache-kafka-linger-ms-and-batch-size-settings
         // https://stackoverflow.com/questions/66045267/kafka-setting-high-linger-ms-and-batch-size-not-helping
-        // 1MB, 50ms linger gives ~1800 throughput
+        // 1MB, 50ms linger gives good throughput
         // compression didn't help
-        props.put("batch.size", 1024*1024); // 32MB
+        props.put("batch.size", 1024*1024);
         props.put("linger.ms", 50);
 
         // TODO: temporary types
@@ -124,22 +121,14 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                         new ProducerRecord<String, V>(TOPIC, key, value);
 
         try {
-            // System.out.println("ABOUT TO SEND RECORD");
-            // final RecordMetadata metadata = 
-            this.producer.send(record);//.get(); 
-            // System.out.println(metadata);
-            // System.out.println("SENT RECORD");
-            // System.out.println();
+            this.producer.send(record);
         }
         catch(Exception e) {
             System.out.println("ERROR SENDING RECORD");
             System.out.println(e);
             return false;
         }
-        finally {
-            // this.producer.flush();
-            return true;
-        }
+        return true;
     }
 
     @Override
@@ -179,10 +168,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         //     this.thread.run();
         //     j = System.currentTimeMillis();
         // }
-        
-
-        // System.out.println("current key (should be last key, unaffected by redpanda): " + this.backend.getCurrentKey());
-        // this.thread.run();
 
         try {
             byte[] valueBytes =
@@ -233,7 +218,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             // currently topic is hard-coded to word_chat since that is what the consumer is subscribed to
             // This could possibly changed to the state decriptor name for the value state idk
             // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
-            this.writeMessage("word_chat", String.valueOf(backend.getCurrentKey()), (V) String.valueOf(value));
+            this.writeMessage(TOPIC, String.valueOf(backend.getCurrentKey()), (V) String.valueOf(value));
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
