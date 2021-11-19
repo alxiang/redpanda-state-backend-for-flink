@@ -109,6 +109,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // 1MB, 50ms linger gives good throughput
         // compression didn't help
         props.put("batch.size", 1024*1024);
+        props.put("buffer.size", 1024*1024);
         props.put("linger.ms", 50);
 
         // TODO: temporary types
@@ -156,7 +157,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() {
 
         // call the poll every 10000 calls to value()
-        if(i % 10000 == 0){
+        if(i % 25 == 0){
             this.thread.run();
             i = 0;
         }

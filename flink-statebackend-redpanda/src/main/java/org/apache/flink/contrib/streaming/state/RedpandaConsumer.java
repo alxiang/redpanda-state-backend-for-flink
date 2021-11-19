@@ -96,6 +96,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // props.put("fetch.min.bytes", 100000000);
         props.put("max.poll.records", 250000);
 
+        props.put("fetch.max.bytes", 52428800);
+        props.put("max.partition.fetch.bytes", 52428800);
+
         // Create the consumer using props.
         final Consumer<String, String> consumer = new KafkaConsumer<>(props);
 
@@ -285,7 +288,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // System.out.println("[REDPANDACONSUMER] I am polling!");
         if (consumerRecords.count() != 0) {
 
-            System.out.println("Num consumer records " + consumerRecords.count());
+            // System.out.println("Num consumer records " + consumerRecords.count());
 
             consumerRecords.forEach(record -> processRecord(record));
             consumer.commitAsync();
