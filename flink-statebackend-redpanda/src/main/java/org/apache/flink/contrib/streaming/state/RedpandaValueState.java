@@ -63,6 +63,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     // Our Redpanda thread
     public RedpandaConsumer thread;
     private int i = 0;
+    private long j = 0L;
 
 
     /**
@@ -171,6 +172,13 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             i = 0;
         }
         i += 1;
+
+        // call the poll every 100ms (wall clock)
+        // System.out.printf("%d %d %d %b\n", System.currentTimeMillis(), j, System.currentTimeMillis() - j, System.currentTimeMillis() - j >= 100);
+        // if(System.currentTimeMillis() - j >= 100){
+        //     this.thread.run();
+        //     j = System.currentTimeMillis();
+        // }
         
 
         // System.out.println("current key (should be last key, unaffected by redpanda): " + this.backend.getCurrentKey());

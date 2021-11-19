@@ -59,13 +59,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     final String stateName;
     // final N currentNamespace;
     RedpandaValueState<K, N, Long> state;
-    
-    
 
     // For latency testing:
-    // keep track of total latency over 500,000 records
-    Integer num_records = 100_000_000;
+    // keep track of total latency over 100,000 records
+    Integer num_records = 100_000;
     Integer curr_records = 0;
+    Integer warmup = 25;
 
     // currentTimeMillis - record.timestamp()
     Long total_latency_from_produced = 0L;
@@ -232,25 +231,28 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
                 total_latency_from_produced += (currentTime - record.timestamp());
                 assert(currentTime - record.timestamp() > 0);
-
-                //I changed the keys to be words so I'll comment out this latency test. We'll need to change our benchmarks anyway
-                // total_latency_from_source += (currentTime - record.key());
-                // assert(currentTime - record.key() > 0);
                 
                 curr_records += 1;
             }
 
-            if((curr_records % 100_000 == 0) && (curr_records < num_records)){
-                System.out.println("===LATENCY TESTING RESULTS===");
-                System.out.printf("Total Latency (from Producer): %f\n", 
-                    (float) total_latency_from_produced);
-                // System.out.printf("Total Latency (from WordSource): %f\n",
-                //     (float) total_latency_from_source);
-                System.out.printf("Average Latency (from Producer): %f\n", 
+            if((curr_records % num_records == 0)){
+                if(warmup > 0){
+                    System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
+                    warmup -= 1;
+                }
+                else{
+                    System.out.println("===LATENCY TESTING RESULTS===");
+                }
+                // System.out.printf("Total Latency (from Producer): %f\n", 
+                //     (float) total_latency_from_produced);
+
+                System.out.printf("Average Latency (from Producer): %f\n\n", 
                     (float) total_latency_from_produced / curr_records);
-                // System.out.printf("Average Latency (from WordSource): %f\n",
-                //     (float) total_latency_from_source / curr_records);
-                System.out.printf("Records processed: %d\n", curr_records);
+
+                // System.out.printf("Records processed: %d\n", curr_records);
+      
+                curr_records = 0;
+                total_latency_from_produced = 0L;
             }
             // System.out.printf("updated state for %s to %d\n", word_key, state.value());
         }
@@ -327,7 +329,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // System.out.println("[REDPANDACONSUMER] I am polling!");
         if (consumerRecords.count() != 0) {
 
-            // System.out.println("Num consumer records " + consumerRecords.count());
+            System.out.println("Num consumer records " + consumerRecords.count());
 
             consumerRecords.forEach(record -> processRecord(record));
             consumer.commitAsync();
