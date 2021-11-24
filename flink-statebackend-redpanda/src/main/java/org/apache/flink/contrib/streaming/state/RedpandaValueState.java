@@ -55,7 +55,7 @@ import java.util.Map;
 class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
-    private KafkaProducer<String, V> producer;
+    private KafkaProducer<String, String> producer;
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";
 
@@ -92,7 +92,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.thread.start();
     }
 
-    private KafkaProducer<String, V> createProducer() {
+    private KafkaProducer<String, String> createProducer() {
         // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
@@ -113,14 +113,18 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // props.put("buffer.size", 1024*1024);
         // props.put("linger.ms", 50);
 
-        // TODO: temporary types
-        return new KafkaProducer<String, V>(props);
+        // for improving synchronous writing
+        props.put("acks", "1"); // acknowledgement only from leader broker
+        props.put("max.in.flight.requests.per.connection", "1"); // ordering guarantees
+
+        // always send string records
+        return new KafkaProducer<String, String>(props);
     }
 
-    private boolean writeMessage(String TOPIC, String key, V value) {
+    private boolean writeMessage(String TOPIC, String key, String value) {
 
-        final ProducerRecord<String, V> record =
-                        new ProducerRecord<String, V>(TOPIC, key, value);
+        final ProducerRecord<String, String> record =
+                        new ProducerRecord<String, String>(TOPIC, key, value);
 
         try {
             this.producer.send(record).get();
@@ -187,40 +191,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     @Override
     public void update(V value) {
-        // if (value == null) {
-        //     clear();
-        //     return;
-        // }
+
         try {
-            // byte[] serializedValue = serializeValue(value, valueSerializer);
-            // Tuple2<byte[], String> namespaceKeyStateNameTuple = getNamespaceKeyStateNameTuple();
-            // backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
-
-            // //            Fixed bug where we were using the wrong tuple to update the keys
-            // byte[] currentNamespace = serializeCurrentNamespace();
-
-            // Tuple2<ByteBuffer, String> tupleForKeys =
-            //         new Tuple2(ByteBuffer.wrap(currentNamespace), getStateName());
-            // HashSet<K> keyHash =
-            //         backend.namespaceAndStateNameToKeys.getOrDefault(
-            //                 tupleForKeys, new HashSet<K>());
-            // keyHash.add(backend.getCurrentKey());
-
-            // backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
-
-            // backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this);
-            // backend.stateNamesToKeysAndNamespaces
-            //         .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
-            //         .add(namespaceKeyStateNameTuple.f0);
-
-            // // persist to Redpanda
-            // System.out.println("UPDATING VALUE (WRITING THROUGH TO REDPANDA)");
-            // System.out.printf("key: %s, value: %s\n", String.valueOf(backend.getCurrentKey()), String.valueOf(value));
-
-            // currently topic is hard-coded to word_chat since that is what the consumer is subscribed to
-            // This could possibly changed to the state decriptor name for the value state idk
-            // this.writeMessage(namespaceKeyStateNameTuple.f1, value);
-            this.writeMessage(TOPIC, String.valueOf(backend.getCurrentKey()), (V) String.valueOf(value));
+            this.writeMessage(TOPIC, backend.getCurrentKey().toString(), value.toString());
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
