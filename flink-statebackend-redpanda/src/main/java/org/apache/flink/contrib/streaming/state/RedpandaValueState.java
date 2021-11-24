@@ -86,9 +86,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.producer = this.createProducer();
 
         this.thread = new RedpandaConsumer<>(this.backend, this);
+        this.thread.setName("RedpandaConsumer-thread");
         this.thread.initialize();
-        // this.thread.setPriority(10);
-        // this.thread.start();
+        this.thread.setPriority(10);
+        this.thread.start();
     }
 
     private KafkaProducer<String, V> createProducer() {
@@ -108,9 +109,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // https://stackoverflow.com/questions/66045267/kafka-setting-high-linger-ms-and-batch-size-not-helping
         // 1MB, 50ms linger gives good throughput
         // compression didn't help
-        props.put("batch.size", 1024*1024);
-        props.put("buffer.size", 1024*1024);
-        props.put("linger.ms", 50);
+        // props.put("batch.size", 1024*1024);
+        // props.put("buffer.size", 1024*1024);
+        // props.put("linger.ms", 50);
 
         // TODO: temporary types
         return new KafkaProducer<String, V>(props);
@@ -122,7 +123,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                         new ProducerRecord<String, V>(TOPIC, key, value);
 
         try {
-            this.producer.send(record);
+            this.producer.send(record).get();
         }
         catch(Exception e) {
             System.out.println("ERROR SENDING RECORD");
@@ -157,11 +158,11 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() {
 
         // call the poll every 10000 calls to value()
-        if(i % 25 == 0){
-            this.thread.run();
-            i = 0;
-        }
-        i += 1;
+        // if(i % 25 == 0){
+        //     this.thread.run();
+        //     i = 0;
+        // }
+        // i += 1;
 
         // call the poll every 100ms (wall clock)
         // System.out.printf("%d %d %d %b\n", System.currentTimeMillis(), j, System.currentTimeMillis() - j, System.currentTimeMillis() - j >= 100);

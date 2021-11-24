@@ -51,7 +51,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     RedpandaValueState<K, N, Long> state;
 
     // For latency testing, keeping track of total latency over 100,000 records
-    Integer num_records = 100_000;
+    Integer num_records = 100; //100_000;
     Integer curr_records = 0;
     Integer warmup = 25;
 
@@ -241,6 +241,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription");
 
             cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractPartitionAssignor$MemberInfo");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData");
@@ -282,22 +283,28 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         keySerializer = (TypeSerializer<K>) state.keySerializer;
         valueSerializer = (TypeSerializer<V>) state.valueSerializer;
 
-        // while (true) {
-        // System.out.println("[REDPANDACONSUMER] About to poll!");
-        final ConsumerRecords<String, String> consumerRecords = consumer.poll(0L);
-        // System.out.println("[REDPANDACONSUMER] I am polling!");
-        if (consumerRecords.count() != 0) {
+        while (true) {
+            // System.out.println("[REDPANDACONSUMER] About to poll!");
+            final ConsumerRecords<String, String> consumerRecords = consumer.poll(10L);
+            // System.out.println("[REDPANDACONSUMER] I am polling!");
+            if (consumerRecords.count() != 0) {
 
-            // System.out.println("Num consumer records " + consumerRecords.count());
+                // System.out.println("Num consumer records " + consumerRecords.count());
 
-            consumerRecords.forEach(record -> processRecord(record));
-            consumer.commitAsync();
+                consumerRecords.forEach(record -> processRecord(record));
+                consumer.commitAsync();
 
-            // System.out.println("Processed records");
+                // System.out.println("Processed records");
+            }
+            else {
+                // System.out.println("No records.");
+            }
+
+            // try {
+            //     Thread.sleep(10);
+            // } catch (Exception e) {
+            //     //TODO: handle exception
+            // }
         }
-        else {
-            // System.out.println("No records.");
-        }
-        // }
     }
 }
