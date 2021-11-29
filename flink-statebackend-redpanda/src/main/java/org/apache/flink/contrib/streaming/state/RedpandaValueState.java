@@ -27,9 +27,9 @@ import org.apache.flink.queryablestate.client.state.serialization.KvStateSeriali
 import org.apache.flink.runtime.state.KeyGroupRangeAssignment;
 import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
+import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.internal.InternalValueState;
 import org.apache.flink.util.FlinkRuntimeException;
-
 // Redpanda imports
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.clients.consumer.*;
@@ -41,12 +41,18 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.Collections;
 import java.util.Properties;
 
-import java.nio.ByteBuffer;
-import java.util.HashSet;
+import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.map.ChronicleMap;
+import net.openhft.chronicle.map.ChronicleMapBuilder;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Set;
+import java.util.logging.Logger;
 import java.util.Map;
 
 /**
- * {@link ValueState} implementation that stores state in RocksDB.
+ * {@link ValueState} implementation that stores state in a Memory Mapped File.
  *
  * @param <K> The type of the key.
  * @param <N> The type of the namespace.
@@ -54,6 +60,12 @@ import java.util.Map;
  */
 class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
+
+    private static Logger log = Logger.getLogger("mmf value state");
+    private ChronicleMap<K, V> kvStore;
+    private static int numKeyedStatesBuilt = 0;
+    private boolean chronicleMapInitialized = false;
+    private String className = "RedpandaValueState";
 
     private KafkaProducer<String, String> producer;
     private final static String TOPIC = "word_chat";
@@ -78,7 +90,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             TypeSerializer<V> valueSerializer,
             TypeSerializer<K> keySerializer,
             V defaultValue,
-            RedpandaKeyedStateBackend<K> backend) {
+            RedpandaKeyedStateBackend<K> backend) 
+            throws IOException {
 
         super(namespaceSerializer, valueSerializer, keySerializer, defaultValue, backend);
 
@@ -90,6 +103,74 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.thread.initialize();
         this.thread.setPriority(10);
         this.thread.start();
+    }
+
+    public void setUpChronicleMap() throws IOException {
+        this.kvStore = createChronicleMap();
+    }
+
+    private ChronicleMap<K, V> createChronicleMap() throws IOException {
+        String[] filePrefixes = {
+            "namespaceKeyStateNameToValue",
+        };
+        File[] files = createPersistedFiles(filePrefixes);
+
+        numKeyedStatesBuilt += 1;
+        N averageNamespace = (N) VoidNamespace.INSTANCE;
+        ChronicleMapBuilder<K, V> cmapBuilder =
+                ChronicleMapBuilder.of(
+                                (Class<K>) backend.getCurrentKey().getClass(),
+                                (Class<V>) valueSerializer.createInstance().getClass())
+                        .name("key-and-namespace-to-values")
+                        .entries(1_000_000);
+        if (backend.getCurrentKey() instanceof Integer || backend.getCurrentKey() instanceof Long) {
+            log.info("Key is an Int or Long");
+            //            return ChronicleMapBuilder.of(
+            //                            (Class<K>) backend.getCurrentKey().getClass(),
+            //                            (Class<V>) valueSerializer.createInstance().getClass())
+            //                    .name("key-and-namespace-to-values")
+            //                    .entries(1_000_000)
+            //                    .createPersistedTo(files[0]);
+        } else {
+            cmapBuilder.averageKeySize(64);
+        }
+
+        if (valueSerializer.createInstance() instanceof Integer
+                || valueSerializer.createInstance() instanceof Long) {
+            log.info("Value is an Int or Long");
+        } else {
+            cmapBuilder.averageValue(valueSerializer.createInstance());
+        }
+        return cmapBuilder.createPersistedTo(files[0]);
+        //        return ChronicleMapBuilder.of(
+        //                        (Class<K>) backend.getCurrentKey().getClass(),
+        //                        (Class<V>) valueSerializer.createInstance().getClass())
+        //                .name("key-and-namespace-to-values")
+        //                .averageKeySize(64)
+        //                .averageValue(valueSerializer.createInstance())
+        //                .entries(1_000_000)
+        //                .createPersistedTo(files[0]);
+    }
+
+    private File[] createPersistedFiles(String[] filePrefixes) throws IOException {
+        File[] files = new File[filePrefixes.length];
+        for (int i = 0; i < filePrefixes.length; i++) {
+            files[i] =
+                    new File(
+                            OS.getTarget()
+                                    + "/BackendChronicleMaps/"
+                                    + this.className
+                                    + "/"
+                                    + filePrefixes[i]
+                                    + "_"
+                                    + Integer.toString(this.numKeyedStatesBuilt)
+                                    + ".dat");
+
+            files[i].getParentFile().mkdirs();
+            files[i].delete();
+            files[i].createNewFile();
+        }
+        return files;
     }
 
     private KafkaProducer<String, String> createProducer() {
@@ -159,34 +240,28 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
     @Override
-    public V value() {
+    public Set<K> getKeys(N n) {
+        return kvStore.keySet();
+    }
 
-        // call the poll every 10000 calls to value()
-        // if(i % 25 == 0){
-        //     this.thread.run();
-        //     i = 0;
-        // }
-        // i += 1;
+    @Override
+    public V value() throws IOException {
 
-        // call the poll every 100ms (wall clock)
-        // System.out.printf("%d %d %d %b\n", System.currentTimeMillis(), j, System.currentTimeMillis() - j, System.currentTimeMillis() - j >= 100);
-        // if(System.currentTimeMillis() - j >= 100){
-        //     this.thread.run();
-        //     j = System.currentTimeMillis();
-        // }
-
-        try {
-            byte[] valueBytes =
-                    backend.namespaceKeyStatenameToValue.get(getNamespaceKeyStateNameTuple());
-            if (valueBytes == null) {
-                return getDefaultValue();
-            }
-            dataInputView.setBuffer(valueBytes);
-            return valueSerializer.deserialize(dataInputView);
-        } catch (java.lang.Exception e) {
-            throw new FlinkRuntimeException(
-                    "Error while retrieving data from Memory Mapped File.", e);
+        if (!this.chronicleMapInitialized) {
+            setUpChronicleMap();
+            this.chronicleMapInitialized = true;
         }
+
+        K backendKey = backend.getCurrentKey();
+        if (!kvStore.containsKey(backendKey)) {
+            return defaultValue;
+        }
+
+        return this.kvStore.get(backendKey);
+    }
+
+    Tuple2<K, N> getBackendKey() {
+        return new Tuple2<K, N>(backend.getCurrentKey(), getCurrentNamespace());
     }
 
     @Override
@@ -197,6 +272,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
+
+        // optimized version uses
+        //  kvStore.remove(backend.getCurrentKey());
+        // this.kvStore.put(backend.getCurrentKey(), value);
     }
 
     @Override
@@ -219,16 +298,24 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                         safeKeySerializer, backend.getKeyGroupPrefixBytes(), 32);
         keyBuilder.setKeyAndKeyGroup(keyAndNamespace.f0, keyGroup);
         byte[] key = keyBuilder.buildCompositeKeyNamespace(keyAndNamespace.f1, namespaceSerializer);
+        if (kvStore.containsKey(keyAndNamespace.f0)) {
+            V value = kvStore.get(keyAndNamespace.f0);
+            dataOutputView.clear();
+            safeValueSerializer.serialize(value, dataOutputView);
+            return dataOutputView.getCopyOfBuffer();
+        }
 
         dataOutputView.clear();
         safeValueSerializer.serialize(getDefaultValue(), dataOutputView);
         byte[] defaultValue = dataOutputView.getCopyOfBuffer();
 
-        byte[] value =
-                backend.namespaceKeyStatenameToValue.getOrDefault(
-                        new Tuple2<byte[], String>(key, stateName), defaultValue);
+        return defaultValue;
 
-        return value;
+        // byte[] value =
+        //         backend.namespaceKeyStatenameToValue.getOrDefault(
+        //                 new Tuple2<byte[], String>(key, stateName), defaultValue);
+
+        // return value;
     }
 
     @SuppressWarnings("unchecked")
@@ -236,7 +323,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             StateDescriptor<S, SV> stateDesc,
             RegisteredKeyValueStateBackendMetaInfo<NS, SV> registerResult,
             TypeSerializer<K> keySerializer,
-            RedpandaKeyedStateBackend<K> backend) {
+            RedpandaKeyedStateBackend<K> backend) 
+            throws IOException {
         return (IS)
                 new RedpandaValueState<>(
                         registerResult.getNamespaceSerializer(),
