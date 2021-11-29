@@ -81,6 +81,11 @@ class RedpandaMapState<K, N, UK, UV> extends AbstractRedpandaState<K, N, Map<UK,
     }
 
     @Override
+    public HashSet<K> getKeys(N n) {
+        return null;
+    }
+
+    @Override
     public TypeSerializer<K> getKeySerializer() {
         return backend.getKeySerializer();
     }
