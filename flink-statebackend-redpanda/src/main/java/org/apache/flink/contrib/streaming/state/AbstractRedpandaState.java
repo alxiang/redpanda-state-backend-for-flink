@@ -14,6 +14,7 @@ import org.apache.flink.util.Preconditions;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * Base class for {@link State} implementations that store state in a RocksDB database.
@@ -116,6 +117,8 @@ public abstract class AbstractRedpandaState<K, N, V>
         return KvStateSerializer.deserializeKeyAndNamespace(
                 serializedKeyAndNamespace, keySerializer, namespaceSerializer);
     }
+
+    public abstract Set<K> getKeys(N n);
 
     @Override
     public void setCurrentNamespace(N namespace) {
