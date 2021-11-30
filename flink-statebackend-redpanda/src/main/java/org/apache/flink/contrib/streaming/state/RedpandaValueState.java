@@ -40,6 +40,7 @@ import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.Collections;
 import java.util.Properties;
+import java.nio.ByteBuffer;
 
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.map.ChronicleMap;
@@ -50,6 +51,15 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.Map;
+
+// Jiffy imports (TEMP: hacky way of accessing jiffy, i.e. putting the folder in directory)
+import jiffy.storage.HashTableClient;
+import jiffy.JiffyClient;
+import jiffy.notification.HashTableListener;
+import jiffy.notification.event.Notification;
+import jiffy.util.ByteBufferUtils;
+
+import org.apache.thrift.TException;
 
 /**
  * {@link ValueState} implementation that stores state in a Memory Mapped File.
@@ -62,20 +72,19 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private static Logger log = Logger.getLogger("mmf value state");
-    private ChronicleMap<K, V> kvStore;
     private static int numKeyedStatesBuilt = 0;
-    private boolean chronicleMapInitialized = false;
+
+    private JiffyClient client;
+    public HashTableClient kvStore;
+    private boolean jiffyInitialized = false;
     private String className = "RedpandaValueState";
 
     private KafkaProducer<String, String> producer;
     private final static String TOPIC = "word_chat";
-    private final static String BOOTSTRAP_SERVERS = "localhost:9092";
+    private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     // Our Redpanda thread
     public RedpandaConsumer thread;
-    // Used for synchronous polling frequency
-    private int i = 0;
-    private long j = 0L;
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -102,75 +111,23 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.thread.setName("RedpandaConsumer-thread");
         this.thread.initialize();
         this.thread.setPriority(10);
+        // this.thread.start();
+    }
+
+    public void setUpJiffy() throws TException {
+        this.kvStore = createJiffyHashTable();
+
         this.thread.start();
     }
 
-    public void setUpChronicleMap() throws IOException {
-        this.kvStore = createChronicleMap();
-    }
+    private HashTableClient createJiffyHashTable() throws TException {
+        client = new JiffyClient("127.0.0.1", 9090, 9091);
 
-    private ChronicleMap<K, V> createChronicleMap() throws IOException {
-        String[] filePrefixes = {
-            "namespaceKeyStateNameToValue",
-        };
-        File[] files = createPersistedFiles(filePrefixes);
+        String filename = "/" + this.className + "/" + "namespaceKeyStateNameToValue" +".txt";
+        client.createHashTable(filename, "local://tmp", 1, 1);
 
-        numKeyedStatesBuilt += 1;
-        N averageNamespace = (N) VoidNamespace.INSTANCE;
-        ChronicleMapBuilder<K, V> cmapBuilder =
-                ChronicleMapBuilder.of(
-                                (Class<K>) backend.getCurrentKey().getClass(),
-                                (Class<V>) valueSerializer.createInstance().getClass())
-                        .name("key-and-namespace-to-values")
-                        .entries(1_000_000);
-        if (backend.getCurrentKey() instanceof Integer || backend.getCurrentKey() instanceof Long) {
-            log.info("Key is an Int or Long");
-            //            return ChronicleMapBuilder.of(
-            //                            (Class<K>) backend.getCurrentKey().getClass(),
-            //                            (Class<V>) valueSerializer.createInstance().getClass())
-            //                    .name("key-and-namespace-to-values")
-            //                    .entries(1_000_000)
-            //                    .createPersistedTo(files[0]);
-        } else {
-            cmapBuilder.averageKeySize(64);
-        }
-
-        if (valueSerializer.createInstance() instanceof Integer
-                || valueSerializer.createInstance() instanceof Long) {
-            log.info("Value is an Int or Long");
-        } else {
-            cmapBuilder.averageValue(valueSerializer.createInstance());
-        }
-        return cmapBuilder.createPersistedTo(files[0]);
-        //        return ChronicleMapBuilder.of(
-        //                        (Class<K>) backend.getCurrentKey().getClass(),
-        //                        (Class<V>) valueSerializer.createInstance().getClass())
-        //                .name("key-and-namespace-to-values")
-        //                .averageKeySize(64)
-        //                .averageValue(valueSerializer.createInstance())
-        //                .entries(1_000_000)
-        //                .createPersistedTo(files[0]);
-    }
-
-    private File[] createPersistedFiles(String[] filePrefixes) throws IOException {
-        File[] files = new File[filePrefixes.length];
-        for (int i = 0; i < filePrefixes.length; i++) {
-            files[i] =
-                    new File(
-                            OS.getTarget()
-                                    + "/BackendChronicleMaps/"
-                                    + this.className
-                                    + "/"
-                                    + filePrefixes[i]
-                                    + "_"
-                                    + Integer.toString(this.numKeyedStatesBuilt)
-                                    + ".dat");
-
-            files[i].getParentFile().mkdirs();
-            files[i].delete();
-            files[i].createNewFile();
-        }
-        return files;
+        HashTableClient kv = client.openHashTable(filename);
+        return kv;
     }
 
     private KafkaProducer<String, String> createProducer() {
@@ -241,23 +198,48 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     @Override
     public Set<K> getKeys(N n) {
-        return kvStore.keySet();
+        return null;
+        // return kvStore.keySet();
     }
 
     @Override
     public V value() throws IOException {
 
-        if (!this.chronicleMapInitialized) {
-            setUpChronicleMap();
-            this.chronicleMapInitialized = true;
+        if (!this.jiffyInitialized) {
+            try {
+                setUpJiffy();
+            } catch (Exception e) {
+                //TODO: handle exception
+                System.out.println("Failed to set up jiffy");
+                System.exit(-1);
+            }
+            this.jiffyInitialized = true;
         }
 
         K backendKey = backend.getCurrentKey();
-        if (!kvStore.containsKey(backendKey)) {
-            return defaultValue;
+        ByteBuffer key = ByteBufferUtils.fromString("test_key"); //ByteBufferUtils.fromLong((long) backendKey);
+
+        try {
+            System.out.println("Checking if key exists");
+            if (!kvStore.exists(key)) {
+                System.out.println("Key doesn't exist");
+                return defaultValue;
+            }
+    
+            System.out.println("Trying to retrieve value");
+            ByteBuffer value = this.kvStore.get(key);
+
+            System.out.printf("retrieved %b value from jiffy\n", value);
+    
+            return (V) (Long) ByteBufferUtils.toLong(value);
+        } catch (Exception e) {
+            //TODO: handle exception
+            System.out.println("failed to retrieve from jiffy!");
+            System.out.println(e);
+            System.exit(-1);
         }
 
-        return this.kvStore.get(backendKey);
+        return null;
     }
 
     Tuple2<K, N> getBackendKey() {
@@ -272,12 +254,9 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
-
-        // optimized version uses
-        //  kvStore.remove(backend.getCurrentKey());
-        // this.kvStore.put(backend.getCurrentKey(), value);
     }
 
+    // TEMP: this doesn't really work, but we don't need it?
     @Override
     public byte[] getSerializedValue(
             final byte[] serializedKeyAndNamespace,
@@ -298,12 +277,12 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                         safeKeySerializer, backend.getKeyGroupPrefixBytes(), 32);
         keyBuilder.setKeyAndKeyGroup(keyAndNamespace.f0, keyGroup);
         byte[] key = keyBuilder.buildCompositeKeyNamespace(keyAndNamespace.f1, namespaceSerializer);
-        if (kvStore.containsKey(keyAndNamespace.f0)) {
-            V value = kvStore.get(keyAndNamespace.f0);
-            dataOutputView.clear();
-            safeValueSerializer.serialize(value, dataOutputView);
-            return dataOutputView.getCopyOfBuffer();
-        }
+        // if (kvStore.containsKey(keyAndNamespace.f0)) {
+        //     V value = kvStore.get(keyAndNamespace.f0);
+        //     dataOutputView.clear();
+        //     safeValueSerializer.serialize(value, dataOutputView);
+        //     return dataOutputView.getCopyOfBuffer();
+        // }
 
         dataOutputView.clear();
         safeValueSerializer.serialize(getDefaultValue(), dataOutputView);

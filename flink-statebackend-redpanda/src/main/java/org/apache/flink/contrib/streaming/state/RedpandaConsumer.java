@@ -28,13 +28,22 @@ import java.util.HashSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.common.state.State;
 
+// Jiffy imports (TEMP: hacky way of accessing jiffy, i.e. putting the folder in directory)
+import jiffy.storage.HashTableClient;
+import jiffy.JiffyClient;
+import jiffy.notification.HashTableListener;
+import jiffy.notification.event.Notification;
+import jiffy.util.ByteBufferUtils;
+
+import org.apache.thrift.TException;
+
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
     private Consumer<String, String> consumer;
 
     private final static String TOPIC = "word_chat";
-    private final static String BOOTSTRAP_SERVERS = "localhost:9092";
+    private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     protected final DataOutputSerializer dataOutputView;
     protected final DataInputDeserializer dataInputView;   
@@ -141,42 +150,22 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     private void makeUpdate(K key, V value){
 
-        keyBuilder.setKeyAndKeyGroup(key, 0);
-        if (value == null) {
-            // TODO: unimplemented
-            // clear();
-            return;
-        }
+        ByteBuffer keyBytes = ByteBufferUtils.fromLong((long) key);
+        ByteBuffer valueBytes = ByteBufferUtils.fromLong((long) value);
         try {
-            dataOutputView.clear();
-            state.valueSerializer.serialize((Long) value, dataOutputView);
-            byte[] serializedValue = dataOutputView.getCopyOfBuffer();
+            // System.out.println(keyBytes);
+            // System.out.println(valueBytes);
+            // System.out.println(state.kvStore);
+            assert(state.kvStore != null);
+            // System.out.println(key);
+            // System.out.println(value);
+            // state.kvStore.put(keyBytes, valueBytes);
 
-            Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
-            backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
-
-            dataOutputView.clear();
-            state.getNamespaceSerializer().serialize(state.getCurrentNamespace(), dataOutputView);
-            byte[] currentNamespace = dataOutputView.getCopyOfBuffer();
-
-            Tuple2<ByteBuffer, String> tupleForKeys =
-                    new Tuple2(ByteBuffer.wrap(currentNamespace), stateName);
-            HashSet<K> keyHash =
-                    backend.namespaceAndStateNameToKeys.getOrDefault(
-                            tupleForKeys, new HashSet<K>());
-            keyHash.add(key);
-
-            backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
-
-            backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this.state);
-            backend.stateNamesToKeysAndNamespaces
-                    .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
-                    .add(namespaceKeyStateNameTuple.f0);
-        } 
-        catch (java.lang.Exception e) {
-            System.out.println("ERROR");
+            state.kvStore.put(ByteBufferUtils.fromString("test_key"), ByteBufferUtils.fromString("test_value"));
+        } catch (Exception e) {
+            System.out.println("[REDPANDACCONSUMER] not put into kvstore!");
             System.out.println(e);
-            throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
+            System.exit(-1);
         }
     }
 
@@ -201,21 +190,21 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 curr_records += 1;
             }
 
-            if((curr_records % num_records == 0)){
-                if(warmup > 0){
-                    System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
-                    warmup -= 1;
-                }
-                else{
-                    System.out.println("===LATENCY TESTING RESULTS===");
-                }
+            // if((curr_records % num_records == 0)){
+            //     if(warmup > 0){
+            //         System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
+            //         warmup -= 1;
+            //     }
+            //     else{
+            //         System.out.println("===LATENCY TESTING RESULTS===");
+            //     }
 
-                System.out.printf("Average Latency (from Producer): %f\n\n", 
-                    (float) total_latency_from_produced / curr_records);
+            //     System.out.printf("Average Latency (from Producer): %f\n\n", 
+            //         (float) total_latency_from_produced / curr_records);
       
-                curr_records = 0;
-                total_latency_from_produced = 0L;
-            }
+            //     curr_records = 0;
+            //     total_latency_from_produced = 0L;
+            // }
             // System.out.printf("updated state for %s to %d\n", word_key, state.value());
         }
         catch (Exception exception){
@@ -251,6 +240,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.RequestFuture$2");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$3");
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$Assignment");
+            
             
             cl.loadClass("org.apache.kafka.common.requests.FetchMetadata");
             cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData");
@@ -299,12 +291,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             else {
                 // System.out.println("No records.");
             }
-
-            // try {
-            //     Thread.sleep(10);
-            // } catch (Exception e) {
-            //     //TODO: handle exception
-            // }
         }
     }
 }
