@@ -76,6 +76,13 @@ under the License.
 
 	<dependencies>
 
+		<dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-map</artifactId>
+            <version>3.21ea41</version>
+			<scope>compile</scope>
+        </dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
