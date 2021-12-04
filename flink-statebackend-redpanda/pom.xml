@@ -71,6 +71,22 @@ under the License.
 
 	<dependencies>
 
+		<!-- Jiffy integration dependencies-->
+
+		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.32</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.thrift/libthrift -->
+		<dependency>
+			<groupId>org.apache.thrift</groupId>
+			<artifactId>libthrift</artifactId>
+			<version>0.13.0</version>
+		</dependency>
+
 		<!-- Kafka integration dependencies-->
 		<dependency>
 			<groupId>org.apache.flink</groupId>

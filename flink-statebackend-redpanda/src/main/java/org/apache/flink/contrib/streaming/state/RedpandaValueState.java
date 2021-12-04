@@ -51,6 +51,15 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.Map;
 
+import jiffy.JiffyClient;
+import jiffy.storage.FileWriter;
+import jiffy.storage.FileReader;
+import jiffy.storage.HashTableClient;
+import jiffy.notification.HashTableListener;
+import jiffy.directory.directory_service.Client;
+import jiffy.notification.event.Notification;
+import jiffy.util.ByteBufferUtils;
+
 /**
  * {@link ValueState} implementation that stores state in a Memory Mapped File.
  *
@@ -69,13 +78,16 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     private KafkaProducer<String, String> producer;
     private final static String TOPIC = "word_chat";
-    private final static String BOOTSTRAP_SERVERS = "localhost:9092";
+    private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     // Our Redpanda thread
     public RedpandaConsumer thread;
     // Used for synchronous polling frequency
     private int i = 0;
     private long j = 0L;
+
+    // Jiffy integration
+    JiffyClient client;
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -103,6 +115,14 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.thread.initialize();
         this.thread.setPriority(10);
         this.thread.start();
+
+        try {
+            this.client = new JiffyClient("127.0.0.1", 9090, 9091);
+        } catch (Exception e) {
+            System.out.println("Failed to connect to Jiffy with client, are the Jiffy directory and storage daemons running?");
+            System.out.println(e);
+            System.exit(-1);
+        }
     }
 
     public void setUpChronicleMap() throws IOException {
@@ -116,7 +136,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         File[] files = createPersistedFiles(filePrefixes);
 
         numKeyedStatesBuilt += 1;
-        N averageNamespace = (N) VoidNamespace.INSTANCE;
         ChronicleMapBuilder<K, V> cmapBuilder =
                 ChronicleMapBuilder.of(
                                 (Class<K>) backend.getCurrentKey().getClass(),
@@ -125,12 +144,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                         .entries(1_000_000);
         if (backend.getCurrentKey() instanceof Integer || backend.getCurrentKey() instanceof Long) {
             log.info("Key is an Int or Long");
-            //            return ChronicleMapBuilder.of(
-            //                            (Class<K>) backend.getCurrentKey().getClass(),
-            //                            (Class<V>) valueSerializer.createInstance().getClass())
-            //                    .name("key-and-namespace-to-values")
-            //                    .entries(1_000_000)
-            //                    .createPersistedTo(files[0]);
         } else {
             cmapBuilder.averageKeySize(64);
         }
@@ -142,33 +155,29 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             cmapBuilder.averageValue(valueSerializer.createInstance());
         }
         return cmapBuilder.createPersistedTo(files[0]);
-        //        return ChronicleMapBuilder.of(
-        //                        (Class<K>) backend.getCurrentKey().getClass(),
-        //                        (Class<V>) valueSerializer.createInstance().getClass())
-        //                .name("key-and-namespace-to-values")
-        //                .averageKeySize(64)
-        //                .averageValue(valueSerializer.createInstance())
-        //                .entries(1_000_000)
-        //                .createPersistedTo(files[0]);
     }
 
     private File[] createPersistedFiles(String[] filePrefixes) throws IOException {
         File[] files = new File[filePrefixes.length];
         for (int i = 0; i < filePrefixes.length; i++) {
-            files[i] =
-                    new File(
-                            OS.getTarget()
-                                    + "/BackendChronicleMaps/"
-                                    + this.className
-                                    + "/"
-                                    + filePrefixes[i]
-                                    + "_"
-                                    + Integer.toString(this.numKeyedStatesBuilt)
-                                    + ".dat");
 
+            String filePath = (
+                "/BackendChronicleMaps/"
+                + this.className
+                + filePrefixes[i] 
+                + "_"
+                + Integer.toString(this.numKeyedStatesBuilt)
+                + ".txt"
+            );
+
+            try {
+                FileWriter writer = client.createFile(filePath, "local://tmp");
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+
+            files[i] = new File("/tmp" + filePath);
             files[i].getParentFile().mkdirs();
-            files[i].delete();
-            files[i].createNewFile();
         }
         return files;
     }

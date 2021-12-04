@@ -34,7 +34,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<String, String> consumer;
 
     private final static String TOPIC = "word_chat";
-    private final static String BOOTSTRAP_SERVERS = "localhost:9092";
+    private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     protected final DataOutputSerializer dataOutputView;
     protected final DataInputDeserializer dataInputView;   
