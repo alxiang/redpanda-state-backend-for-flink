@@ -60,6 +60,9 @@ import jiffy.directory.directory_service.Client;
 import jiffy.notification.event.Notification;
 import jiffy.util.ByteBufferUtils;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * {@link ValueState} implementation that stores state in a Memory Mapped File.
  *
@@ -78,14 +81,11 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     private KafkaProducer<String, String> producer;
     // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
-    private final static String TOPIC = "word_chat";
+    String TOPIC;
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     // Our Redpanda thread
     public RedpandaConsumer thread;
-    // Used for synchronous polling frequency
-    private int i = 0;
-    private long j = 0L;
 
     // Jiffy integration
     JiffyClient client;
@@ -107,6 +107,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             throws IOException {
 
         super(namespaceSerializer, valueSerializer, keySerializer, defaultValue, backend);
+
+        // programmatic definition of topic for Redpanda integration
+        // using memory address of the current class to avoid collisions
+        TOPIC = this.toString().substring(this.toString().lastIndexOf("@")+1);
 
         // Create Redpanda producer
         this.producer = this.createProducer();
@@ -164,16 +168,26 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
             String filePath = (
                 "/BackendChronicleMaps/"
-                + this.className  // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
+                + this.toString() + "/"  // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
                 + filePrefixes[i] 
                 + "_"
                 + Integer.toString(this.numKeyedStatesBuilt)
                 + ".txt"
             );
 
+
+
+            String hostAddress = "";
+            try {
+                hostAddress = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+        
+
             try {
                 // TODO(ALEC): programmatically use the host_name for the local node here
-                FileWriter writer = client.createFile(filePath, "local://tmp");
+                FileWriter writer = client.createFile(filePath, "local://tmp", hostAddress);
             } catch (Exception e) {
                 System.out.println(e);
             }

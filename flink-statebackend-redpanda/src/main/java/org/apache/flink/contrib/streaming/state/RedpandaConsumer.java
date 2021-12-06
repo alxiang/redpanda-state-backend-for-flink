@@ -34,7 +34,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<String, String> consumer;
 
     // TODO(ALEC): grab the programmatically generated topic name from ValueState
-    private final static String TOPIC = "word_chat";
+    static String TOPIC;
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     protected final DataOutputSerializer dataOutputView;
@@ -80,6 +80,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
         stateName = "Word counter"; 
         state = (RedpandaValueState<K, N, Long>) state_;
+
+        TOPIC = state.TOPIC;
     }
 
     private static Consumer<String, String> createConsumer() {
@@ -300,12 +302,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             else {
                 // System.out.println("No records.");
             }
-
-            // try {
-            //     Thread.sleep(10);
-            // } catch (Exception e) {
-            //     //TODO: handle exception
-            // }
         }
     }
 }

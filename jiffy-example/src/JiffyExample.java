@@ -71,6 +71,7 @@ public class JiffyExample {
             ip = InetAddress.getLocalHost();
             hostname = ip.getHostName();
             System.out.println("Your current IP address : " + ip);
+            System.out.println("Addr: " + ip.getHostAddress());
             System.out.println("Your current Hostname : " + hostname);
  
         } catch (UnknownHostException e) {
