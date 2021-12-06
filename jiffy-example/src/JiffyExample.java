@@ -43,31 +43,19 @@ public class JiffyExample {
                 "/BackendChronicleMaps/JiffyExample/"
                 + filePrefixes[i] 
                 + ".txt", 
-                "local://tmp"
+                "local://tmp",
+                "127.0.0.1"
             );
             } catch (Exception e) {
                 System.out.println(e);
             }
             
-
             files[i] = new File(
                 "/tmp/BackendChronicleMaps/JiffyExample/"
                 + filePrefixes[i] 
                 + ".txt"
             );
-            // new File(
-            //                 OS.getTarget()
-            //                         + "/BackendChronicleMaps/"
-            //                         + this.className
-            //                         + "/"
-            //                         + filePrefixes[i]
-            //                         + "_"
-            //                         + Integer.toString(this.numKeyedStatesBuilt)
-            //                         + ".dat");
-
             files[i].getParentFile().mkdirs();
-            // files[i].delete();
-            // files[i].createNewFile();
         }
         return files;
     }
@@ -81,19 +69,6 @@ public class JiffyExample {
             kvStore.put(String.valueOf(i), 1L*i);
             System.out.println(kvStore.get(String.valueOf(i)));
         }
-        
-
-        // FileWriter writer = client.createFile("/a/file.txt", "local://tmp");
-        // FileReader reader = client.openFile("/a/file.txt");
-
-        // ByteBuffer buf = ByteBufferUtils.fromString("abcdefghijklmnopqrstuvwxy");
-        // writer.write(buf);
-
-        // reader.seek(0);
-        // buf = reader.read(3);
-        // buf.rewind();
-        // byte[] arr = new byte[buf.remaining()];
-        // System.out.println(buf.get(arr));
 
         client.remove("/BackendChronicleMaps/JiffyExample/namespaceKeyStateNameToValue.txt");
 
