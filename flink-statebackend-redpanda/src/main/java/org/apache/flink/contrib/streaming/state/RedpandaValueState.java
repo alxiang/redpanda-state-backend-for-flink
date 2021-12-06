@@ -77,6 +77,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private String className = "RedpandaValueState";
 
     private KafkaProducer<String, String> producer;
+    // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
@@ -163,7 +164,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
             String filePath = (
                 "/BackendChronicleMaps/"
-                + this.className
+                + this.className  // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
                 + filePrefixes[i] 
                 + "_"
                 + Integer.toString(this.numKeyedStatesBuilt)
@@ -171,6 +172,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             );
 
             try {
+                // TODO(ALEC): programmatically use the host_name for the local node here
                 FileWriter writer = client.createFile(filePath, "local://tmp");
             } catch (Exception e) {
                 System.out.println(e);

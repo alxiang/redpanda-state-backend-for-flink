@@ -33,6 +33,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private final RedpandaKeyedStateBackend<K> backend;
     private Consumer<String, String> consumer;
 
+    // TODO(ALEC): grab the programmatically generated topic name from ValueState
     private final static String TOPIC = "word_chat";
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
