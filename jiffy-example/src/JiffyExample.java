@@ -17,6 +17,9 @@ import net.openhft.chronicle.map.ChronicleMapBuilder;
 import java.io.File;
 import java.io.IOException;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 public class JiffyExample {
 
     private static ChronicleMap<String, Long> createChronicleMap(JiffyClient client) throws IOException {
@@ -44,7 +47,7 @@ public class JiffyExample {
                 + filePrefixes[i] 
                 + ".txt", 
                 "local://tmp",
-                "127.0.0.1"
+                "172.27.77.254"
             );
             } catch (Exception e) {
                 System.out.println(e);
@@ -61,6 +64,18 @@ public class JiffyExample {
     }
 
     public static void main(String... args) throws Exception {
+
+        InetAddress ip;
+        String hostname;
+        try {
+            ip = InetAddress.getLocalHost();
+            hostname = ip.getHostName();
+            System.out.println("Your current IP address : " + ip);
+            System.out.println("Your current Hostname : " + hostname);
+ 
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
 
         JiffyClient client = new JiffyClient("127.0.0.1", 9090, 9091);
         ChronicleMap kvStore = createChronicleMap(client);
