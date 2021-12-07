@@ -120,28 +120,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         );
     }
 
-    private V getValue(K key){
-
-        keyBuilder.setKeyAndKeyGroup(key, 0);
-
-        try {
-            Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
-
-            byte[] valueBytes =
-                    backend.namespaceKeyStatenameToValue.get(namespaceKeyStateNameTuple);
-            if (valueBytes == null) {
-                return (V) state.getDefaultValue();
-            }
-
-            dataInputView.setBuffer(valueBytes);
-            return valueSerializer.deserialize(dataInputView);
-
-        } catch (java.lang.Exception e) {
-            throw new FlinkRuntimeException(
-                    "Error while retrieving data in getValue() in RedpandaConsumer.", e);
-        }
-    }
-
     private void makeUpdate(K key, V value){
 
         keyBuilder.setKeyAndKeyGroup(key, 0);
@@ -151,30 +129,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             return;
         }
         try {
-            dataOutputView.clear();
-            state.valueSerializer.serialize((Long) value, dataOutputView);
-            byte[] serializedValue = dataOutputView.getCopyOfBuffer();
-
-            Tuple2<byte[], String> namespaceKeyStateNameTuple = this.myGetNamespaceKeyStateNameTuple();
-            backend.namespaceKeyStatenameToValue.put(namespaceKeyStateNameTuple, serializedValue);
-
-            dataOutputView.clear();
-            state.getNamespaceSerializer().serialize(state.getCurrentNamespace(), dataOutputView);
-            byte[] currentNamespace = dataOutputView.getCopyOfBuffer();
-
-            Tuple2<ByteBuffer, String> tupleForKeys =
-                    new Tuple2(ByteBuffer.wrap(currentNamespace), stateName);
-            HashSet<K> keyHash =
-                    backend.namespaceAndStateNameToKeys.getOrDefault(
-                            tupleForKeys, new HashSet<K>());
-            keyHash.add(key);
-
-            backend.namespaceAndStateNameToKeys.put(tupleForKeys, keyHash);
-
-            backend.namespaceKeyStateNameToState.put(namespaceKeyStateNameTuple, this.state);
-            backend.stateNamesToKeysAndNamespaces
-                    .getOrDefault(namespaceKeyStateNameTuple.f1, new HashSet<byte[]>())
-                    .add(namespaceKeyStateNameTuple.f0);
+            System.out.println("[REDPANDACONSUMER]kvStore put");
+            state.kvStore.put(key, (Long) value);
         } 
         catch (java.lang.Exception e) {
             System.out.println("ERROR");

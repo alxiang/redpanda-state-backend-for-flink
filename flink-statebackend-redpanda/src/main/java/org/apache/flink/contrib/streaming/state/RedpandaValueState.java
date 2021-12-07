@@ -74,7 +74,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private static Logger log = Logger.getLogger("mmf value state");
-    private ChronicleMap<K, V> kvStore;
+    ChronicleMap<K, V> kvStore;
     private static int numKeyedStatesBuilt = 0;
     private boolean chronicleMapInitialized = false;
     private String className = "RedpandaValueState";
