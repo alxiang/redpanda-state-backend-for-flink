@@ -129,12 +129,14 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             return;
         }
         try {
-            System.out.println("[REDPANDACONSUMER]kvStore put");
+            // System.out.println("[REDPANDACONSUMER]kvStore put");
             state.kvStore.put(key, (Long) value);
         } 
         catch (java.lang.Exception e) {
-            System.out.println("ERROR");
             System.out.println(e);
+            System.out.println(key);
+            System.out.println(value);
+            System.out.println(state.kvStore);
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
     }
@@ -222,6 +224,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2");
             cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException");
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$Assignment");
 
             cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1");
             cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState");

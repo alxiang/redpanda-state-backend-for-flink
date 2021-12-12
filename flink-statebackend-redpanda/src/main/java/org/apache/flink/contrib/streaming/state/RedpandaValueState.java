@@ -119,7 +119,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.thread.setName("RedpandaConsumer-thread");
         this.thread.initialize();
         this.thread.setPriority(10);
-        this.thread.start();
 
         try {
             this.client = new JiffyClient("127.0.0.1", 9090, 9091);
@@ -128,6 +127,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             System.out.println(e);
             System.exit(-1);
         }
+        
+        this.thread.start();
     }
 
     public void setUpChronicleMap() throws IOException {
@@ -290,7 +291,12 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
     @Override
-    public void update(V value) {
+    public void update(V value) throws IOException {
+
+        if (!this.chronicleMapInitialized) {
+            setUpChronicleMap();
+            this.chronicleMapInitialized = true;
+        }
 
         try {
             this.writeMessage(TOPIC, backend.getCurrentKey().toString(), value.toString());
