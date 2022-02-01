@@ -161,7 +161,6 @@ public class JiffyClient implements Closeable {
         DEFAULT_FLAGS, DEFAULT_PERMISSIONS, DEFAULT_TAGS, host_name);
   }
 
-
   public FileWriter createFile(String path, String backingPath, int numBlocks,
       int chainLength) throws TException {
     return createFile(path, backingPath, numBlocks, chainLength, DEFAULT_FLAGS,

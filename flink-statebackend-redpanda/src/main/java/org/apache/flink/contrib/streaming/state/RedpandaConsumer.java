@@ -31,7 +31,7 @@ import org.apache.flink.api.common.state.State;
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
-    private Consumer<String, String> consumer;
+    private Consumer<K, V> consumer;
 
     // TODO(ALEC): grab the programmatically generated topic name from ValueState
     static String TOPIC;
@@ -49,7 +49,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     // configured!
     final String stateName;
-    RedpandaValueState<K, N, Long> state;
+    RedpandaValueState<K, N, V> state;
+    String key_class_name;
+    String value_class_name;
 
     // For latency testing, keeping track of total latency over 100,000 records
     Integer num_records = 100; //100_000;
@@ -79,18 +81,17 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
         stateName = "Word counter"; 
-        state = (RedpandaValueState<K, N, Long>) state_;
+        state = (RedpandaValueState<K, N, V>) state_;
 
         TOPIC = state.TOPIC;
+        key_class_name = state.key_class_name;
+        value_class_name = state.value_class_name;
     }
 
-    private static Consumer<String, String> createConsumer() {
+    private Consumer<K, V> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-3.0");
-        // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         // performance configs
         props.put("session.timeout.ms", 30000);
@@ -103,26 +104,40 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         props.put("max.partition.fetch.bytes", 52428800);
 
         // Create the consumer using props.
-        final Consumer<String, String> consumer = new KafkaConsumer<>(props);
+        if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                                        StringDeserializer.class.getName());
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                                        StringDeserializer.class.getName());
+            consumer = (KafkaConsumer<K, V>) new KafkaConsumer<String, String>(props);
+        }
+        else if(key_class_name == "java.lang.String" && value_class_name == "java.lang.Long"){
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                                        StringDeserializer.class.getName());
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                                        LongDeserializer.class.getName());
+            consumer = (KafkaConsumer<K, V>) new KafkaConsumer<String, Long>(props);
+        }
+        else if(key_class_name == "java.lang.Long" && value_class_name == "java.lang.Long"){
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                                        LongDeserializer.class.getName());
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                                        LongDeserializer.class.getName());
+            consumer = (KafkaConsumer<K, V>) new KafkaConsumer<Long, Long>(props);
+        }
+        else{
+            String error_message = String.format("Type combination %s and %s not supported yet.", key_class_name, value_class_name);
+            throw new java.lang.UnsupportedOperationException(error_message);
+        }
 
         // Subscribe to the topic.
         consumer.subscribe(Collections.singletonList(TOPIC));
         return consumer;
     }
 
-    private Tuple2<byte[], String> myGetNamespaceKeyStateNameTuple(){
-        return new Tuple2<byte[], String>(
-            keyBuilder.buildCompositeKeyNamespace(
-                state.getCurrentNamespace(), 
-                state.getNamespaceSerializer()
-            ),
-            stateName
-        );
-    }
-
     private void makeUpdate(K key, V value){
 
-        keyBuilder.setKeyAndKeyGroup(key, 0);
+        // keyBuilder.setKeyAndKeyGroup(key, 0);
         if (value == null) {
             // TODO: unimplemented
             // clear();
@@ -130,7 +145,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
         try {
             // System.out.println("[REDPANDACONSUMER]kvStore put");
-            state.kvStore.put(key, (Long) value);
+            state.kvStore.put(key, value);
         } 
         catch (java.lang.Exception e) {
             System.out.println(e);
@@ -141,16 +156,18 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
 
-    private void processRecord(ConsumerRecord<String, String> record){
+    private void processRecord(ConsumerRecord<K, V> record){
         // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
         //         record.partition(), record.offset());
 
+        // TODO: like for the producer, we would ideally template type deciding so logic is not in hot path
+
         try{
-            String word_key = record.key();
-            Long value = Long.parseLong(record.value());
+            K key = record.key();
+            V value = record.value();
             
             // TODO: keys must be of type long -- find dynamic way to do this
-            this.makeUpdate((K) Long.valueOf(word_key), (V) value);
+            this.makeUpdate(key, value);
             
             // Latency testing: after this point, the new value is available in the user-code
             if(curr_records < num_records){
@@ -247,7 +264,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         while (true) {
             // System.out.println("[REDPANDACONSUMER] About to poll!");
-            final ConsumerRecords<String, String> consumerRecords = consumer.poll(10L);
+            final ConsumerRecords<K, V> consumerRecords = consumer.poll(10L);
             // System.out.println("[REDPANDACONSUMER] I am polling!");
             if (consumerRecords.count() != 0) {
 

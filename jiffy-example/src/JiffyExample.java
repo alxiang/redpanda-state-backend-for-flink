@@ -31,8 +31,10 @@ public class JiffyExample {
         ChronicleMapBuilder<String, Long> cmapBuilder =
                 ChronicleMapBuilder.of(String.class, Long.class)
                         .name("key-and-namespace-to-values")
-                        .entries(1_000_000);
-        cmapBuilder.averageKeySize(64);
+                        .entries(20_000_000L);
+        cmapBuilder.averageKeySize(10);
+        // https://github.com/OpenHFT/Chronicle-Map/issues/130
+        //https://www.javadoc.io/doc/net.openhft/chronicle-map/3.13.0/net/openhft/chronicle/hash/ChronicleHashBuilder.html#maxBloatFactor-double-
 
         return cmapBuilder.createPersistedTo(files[0]);
     }
@@ -81,13 +83,29 @@ public class JiffyExample {
         JiffyClient client = new JiffyClient("127.0.0.1", 9090, 9091);
         ChronicleMap kvStore = createChronicleMap(client);
 
-        for(int i=1; i<=100; i++){
-            kvStore.put(String.valueOf(i), 1L*i);
-            System.out.println(kvStore.get(String.valueOf(i)));
+        for(int i=1; i<=10_000_000; i++){
+
+            if(i % 100_000 == 0){
+                System.out.println(i);
+            }
+
+            try{
+                kvStore.put(String.valueOf(i), 1L*i);
+            }
+            catch (Exception e) {
+                System.out.printf("failed at record %d\n", i);
+                e.printStackTrace();
+                client.remove("/BackendChronicleMaps/JiffyExample/namespaceKeyStateNameToValue.txt");
+                client.close();
+                System.exit(-1);
+                
+            }
+            // System.out.println("temp");
+           
+            // System.out.println(kvStore.get(String.valueOf(i)));
         }
 
         client.remove("/BackendChronicleMaps/JiffyExample/namespaceKeyStateNameToValue.txt");
-
         client.close();
     }
     

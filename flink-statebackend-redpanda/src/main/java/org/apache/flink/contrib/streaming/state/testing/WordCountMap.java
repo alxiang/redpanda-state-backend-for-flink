@@ -26,6 +26,10 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
         
         // update the state
         count.update(currentCount);
+
+        // for debugging
+        // Thread.sleep(1);
+        // count.value();
         
         out.collect(new Tuple2<String, Long>(input.f0, currentCount));
     }

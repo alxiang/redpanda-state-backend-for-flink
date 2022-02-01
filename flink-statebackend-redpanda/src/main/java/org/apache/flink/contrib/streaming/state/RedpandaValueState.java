@@ -79,8 +79,10 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private boolean chronicleMapInitialized = false;
     private String className = "RedpandaValueState";
 
-    private KafkaProducer<String, String> producer;
-    // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
+    private KafkaProducer<K, V> producer;
+    public String key_class_name;
+    public String value_class_name;
+    // TODO(ALEC): see if "this.toString()" is sufficient for unique naming
     String TOPIC;
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
@@ -112,13 +114,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // using memory address of the current class to avoid collisions
         TOPIC = this.toString().substring(this.toString().lastIndexOf("@")+1);
 
-        // Create Redpanda producer
-        this.producer = this.createProducer();
-
-        this.thread = new RedpandaConsumer<>(this.backend, this);
-        this.thread.setName("RedpandaConsumer-thread");
-        this.thread.initialize();
-        this.thread.setPriority(10);
+       
 
         try {
             this.client = new JiffyClient("127.0.0.1", 9090, 9091);
@@ -128,11 +124,20 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             System.exit(-1);
         }
         
-        this.thread.start();
+        
     }
 
-    public void setUpChronicleMap() throws IOException {
+    public void setUpChronicleMapAndRedpandaThread() throws IOException {
         this.kvStore = createChronicleMap();
+
+         // Create Redpanda producer
+         this.producer = this.createProducer();
+
+         this.thread = new RedpandaConsumer<>(this.backend, this);
+         this.thread.setName("RedpandaConsumer-thread");
+         this.thread.initialize();
+         this.thread.setPriority(10);
+         this.thread.start();
     }
 
     private ChronicleMap<K, V> createChronicleMap() throws IOException {
@@ -199,19 +204,17 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return files;
     }
 
-    private KafkaProducer<String, String> createProducer() {
+    private KafkaProducer<K, V> createProducer() {
         // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             BOOTSTRAP_SERVERS);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer (ValueState)");
 
-        // Using String keys always
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-                                        StringSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                                    StringSerializer.class.getName());
+        this.key_class_name = ((Class<K>) backend.getCurrentKey().getClass()).getName();
+        this.value_class_name = ((Class<V>) valueSerializer.createInstance().getClass()).getName();
 
+        System.out.println("Setting up producer: " + key_class_name + " " + value_class_name);
         // https://stackoverflow.com/questions/51521737/apache-kafka-linger-ms-and-batch-size-settings
         // https://stackoverflow.com/questions/66045267/kafka-setting-high-linger-ms-and-batch-size-not-helping
         // 1MB, 50ms linger gives good throughput
@@ -225,13 +228,52 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         props.put("max.in.flight.requests.per.connection", "1"); // ordering guarantees
 
         // always send string records
-        return new KafkaProducer<String, String>(props);
+        // return new KafkaProducer<String, String>(props);
+        if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                        StringSerializer.class.getName());
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                        StringSerializer.class.getName());
+            return (KafkaProducer<K, V>) new KafkaProducer<String, String>(props);
+        }
+        else if(key_class_name == "java.lang.String" && value_class_name == "java.lang.Long"){
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                        StringSerializer.class.getName());
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                        LongSerializer.class.getName());
+            return (KafkaProducer<K, V>) new KafkaProducer<String, Long>(props);
+        }
+        else if(key_class_name == "java.lang.Long" && value_class_name == "java.lang.Long"){
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                        LongSerializer.class.getName());
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                        LongSerializer.class.getName());
+            return (KafkaProducer<K, V>) new KafkaProducer<Long, Long>(props);
+        }
+        else{
+            String error_message = String.format("Type combination %s and %s not supported yet.", key_class_name, value_class_name);
+            throw new java.lang.UnsupportedOperationException(error_message);
+        }
     }
 
-    private boolean writeMessage(String TOPIC, String key, String value) {
+    private boolean writeMessage(String TOPIC, K key, V value) {
 
-        final ProducerRecord<String, String> record =
-                        new ProducerRecord<String, String>(TOPIC, key, value);
+        final ProducerRecord<K, V> record;
+
+        // TODO - get this out of the hot path via Java's equivalent of templating
+        if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
+            record = (ProducerRecord<K, V>) new ProducerRecord<String, String>(TOPIC, key.toString(), value.toString());
+        }
+        else if(key_class_name == "java.lang.String" && value_class_name == "java.lang.Long"){
+            record = (ProducerRecord<K, V>) new ProducerRecord<String, Long>(TOPIC, key.toString(), (Long) value);
+        }
+        else if(key_class_name == "java.lang.Long" && value_class_name == "java.lang.Long"){
+            record = (ProducerRecord<K, V>) new ProducerRecord<Long, Long>(TOPIC, (Long) key, (Long) value);
+        }
+        else{
+            String error_message = String.format("Type combination %s and %s not supported yet.", key_class_name, value_class_name);
+            throw new java.lang.UnsupportedOperationException(error_message);
+        }
 
         try {
             this.producer.send(record).get();
@@ -274,14 +316,18 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() throws IOException {
 
         if (!this.chronicleMapInitialized) {
-            setUpChronicleMap();
+            setUpChronicleMapAndRedpandaThread();
             this.chronicleMapInitialized = true;
         }
 
         K backendKey = backend.getCurrentKey();
+        System.out.println(backendKey);
+        System.out.println(this.kvStore.get(backendKey));
         if (!kvStore.containsKey(backendKey)) {
             return defaultValue;
         }
+        
+        System.out.println(this.kvStore.get(backendKey));
 
         return this.kvStore.get(backendKey);
     }
@@ -294,12 +340,12 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public void update(V value) throws IOException {
 
         if (!this.chronicleMapInitialized) {
-            setUpChronicleMap();
+            setUpChronicleMapAndRedpandaThread();
             this.chronicleMapInitialized = true;
         }
 
         try {
-            this.writeMessage(TOPIC, backend.getCurrentKey().toString(), value.toString());
+            this.writeMessage(TOPIC, backend.getCurrentKey(), value);
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }

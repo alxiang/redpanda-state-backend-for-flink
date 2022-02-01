@@ -51,7 +51,7 @@ public class PrintingJobBenchmark {
 		WordSource.getSource(env, WORD_RATE.defaultValue(), WORD_NUMBER.defaultValue(), WORD_LENGTH.defaultValue())
 					.slotSharingGroup("src");
 
-		DataStream<Tuple2<String, Long>> mapper = source.keyBy(record -> 0L)
+		DataStream<Tuple2<String, Long>> mapper = source.keyBy(record -> record.f0)
 				.flatMap(new WordCountMap()) 
 				.slotSharingGroup("map");
 
