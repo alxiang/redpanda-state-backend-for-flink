@@ -27,21 +27,16 @@ import org.apache.flink.queryablestate.client.state.serialization.KvStateSeriali
 import org.apache.flink.runtime.state.KeyGroupRangeAssignment;
 import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
-import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.internal.InternalValueState;
 import org.apache.flink.util.FlinkRuntimeException;
+
 // Redpanda imports
 import org.apache.kafka.clients.producer.*;
-import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
-import org.apache.kafka.common.serialization.LongDeserializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import java.util.Collections;
 import java.util.Properties;
 
-import net.openhft.chronicle.core.OS;
+// ChronicleMap imports
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
 
@@ -49,16 +44,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.Map;
 
+// Jiffy Client imports
 import jiffy.JiffyClient;
-import jiffy.storage.FileWriter;
-import jiffy.storage.FileReader;
-import jiffy.storage.HashTableClient;
-import jiffy.notification.HashTableListener;
-import jiffy.directory.directory_service.Client;
-import jiffy.notification.event.Notification;
-import jiffy.util.ByteBufferUtils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -70,20 +58,18 @@ import java.net.UnknownHostException;
  * @param <N> The type of the namespace.
  * @param <V> The type of value that the state state stores.
  */
-class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
+public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         implements InternalValueState<K, N, V> {
 
     private static Logger log = Logger.getLogger("mmf value state");
     ChronicleMap<K, V> kvStore;
     private static int numKeyedStatesBuilt = 0;
     private boolean chronicleMapInitialized = false;
-    private String className = "RedpandaValueState";
 
     private KafkaProducer<K, V> producer;
     public String key_class_name;
     public String value_class_name;
-    // TODO(ALEC): see if "this.toString()" is sufficient for unique naming
-    String TOPIC;
+    public String TOPIC; // if not set, defaults to memory address of this object
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     // Our Redpanda thread
@@ -113,9 +99,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // programmatic definition of topic for Redpanda integration
         // using memory address of the current class to avoid collisions
         TOPIC = this.toString().substring(this.toString().lastIndexOf("@")+1);
-
-       
-
+        System.out.println("Topic not configured, defaulting to: " + TOPIC);
+        
         try {
             this.client = new JiffyClient("127.0.0.1", 9090, 9091);
         } catch (Exception e) {
@@ -123,21 +108,20 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             System.out.println(e);
             System.exit(-1);
         }
-        
-        
     }
 
     public void setUpChronicleMapAndRedpandaThread() throws IOException {
         this.kvStore = createChronicleMap();
 
-         // Create Redpanda producer
-         this.producer = this.createProducer();
+        // Create Redpanda producer
+        this.producer = this.createProducer();
 
-         this.thread = new RedpandaConsumer<>(this.backend, this);
-         this.thread.setName("RedpandaConsumer-thread");
-         this.thread.initialize();
-         this.thread.setPriority(10);
-         this.thread.start();
+        // Startup the Redpanda Consumer as an async thread
+        this.thread = new RedpandaConsumer<>(this.backend, this);
+        this.thread.setName("RedpandaConsumer-thread");
+        this.thread.initialize();
+        this.thread.setPriority(10);
+        this.thread.start();
     }
 
     private ChronicleMap<K, V> createChronicleMap() throws IOException {
@@ -174,7 +158,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
             String filePath = (
                 "/BackendChronicleMaps/"
-                + this.toString() + "/"  // TODO(ALEC): see if "this.toString()" is sufficient ofr unique naming
+                + this.toString() + "/"
                 + filePrefixes[i] 
                 + "_"
                 + Integer.toString(this.numKeyedStatesBuilt)
@@ -186,14 +170,14 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             String hostAddress = "";
             try {
                 hostAddress = InetAddress.getLocalHost().getHostAddress();
+                System.out.println("Got the local host address as: " + hostAddress);
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             }
         
 
             try {
-                // TODO(ALEC): programmatically use the host_name for the local node here
-                FileWriter writer = client.createFile(filePath, "local://tmp", hostAddress);
+                client.createFile(filePath, "local://tmp", hostAddress);
             } catch (Exception e) {
                 System.out.println(e);
             }
@@ -205,7 +189,8 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
     private KafkaProducer<K, V> createProducer() {
-        // Properties gives properties to the KafkaProducer constructor, i.e. configuring the serialization
+
+        // Configuring the producer
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             BOOTSTRAP_SERVERS);
@@ -227,8 +212,7 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         props.put("acks", "1"); // acknowledgement only from leader broker
         props.put("max.in.flight.requests.per.connection", "1"); // ordering guarantees
 
-        // always send string records
-        // return new KafkaProducer<String, String>(props);
+        // Handle dynamic types, though String may be enough for query engines (convert strings to json)
         if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
             props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                                         StringSerializer.class.getName());
@@ -321,14 +305,11 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         }
 
         K backendKey = backend.getCurrentKey();
-        System.out.println(backendKey);
-        System.out.println(this.kvStore.get(backendKey));
+
         if (!kvStore.containsKey(backendKey)) {
             return defaultValue;
         }
         
-        System.out.println(this.kvStore.get(backendKey));
-
         return this.kvStore.get(backendKey);
     }
 
@@ -349,10 +330,6 @@ class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         } catch (java.lang.Exception e) {
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
-
-        // optimized version uses
-        //  kvStore.remove(backend.getCurrentKey());
-        // this.kvStore.put(backend.getCurrentKey(), value);
     }
 
     @Override

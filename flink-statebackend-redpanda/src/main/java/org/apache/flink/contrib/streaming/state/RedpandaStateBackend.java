@@ -32,9 +32,18 @@ import java.util.Collection;
 public class RedpandaStateBackend extends AbstractManagedMemoryStateBackend
         implements ConfigurableStateBackend {
 
+    
+    private String REDPANDA_TOPIC;
+
     /** Creates a new {@code MemoryMappedStateBackend} for storing local state. */
     public RedpandaStateBackend() {
         // System.out.println("RedpandaStateBackend instantiated");
+    }
+
+    public RedpandaStateBackend(String REDPANDA_TOPIC) {
+        this.REDPANDA_TOPIC = REDPANDA_TOPIC;
+        System.out.println("In Constructor, set Redpanda topic to: " + REDPANDA_TOPIC);
+        System.out.println("Constructor: " + this.toString());
     }
 
     /**
@@ -46,7 +55,7 @@ public class RedpandaStateBackend extends AbstractManagedMemoryStateBackend
      */
     private RedpandaStateBackend(
             RedpandaStateBackend original, ReadableConfig config, ClassLoader classLoader) {}
-
+    
     // ------------------------------------------------------------------------
     //  Reconfiguration
     // ------------------------------------------------------------------------
@@ -169,8 +178,8 @@ public class RedpandaStateBackend extends AbstractManagedMemoryStateBackend
     //  utilities
     // ------------------------------------------------------------------------
 
-    @Override
-    public String toString() {
-        return "MemoryMappedStateBackend{}";
-    }
+//     @Override
+//     public String toString() {
+//         return "RedpandaStateBackend{}";
+//     }
 }

@@ -3,37 +3,22 @@ package org.apache.flink.contrib.streaming.state;
 import java.util.Collections;
 import java.util.Properties;
 
-import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.common.record.*;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
-import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputDeserializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
-import org.apache.flink.runtime.state.VoidNamespace;
-import org.apache.flink.runtime.state.VoidNamespaceSerializer;
-import org.apache.flink.streaming.api.functions.sink.TwoPhaseCommitSinkFunction.StateSerializer;
 import org.apache.flink.util.FlinkRuntimeException;
-import org.apache.flink.api.common.typeutils.base.StringSerializer;
-import org.apache.flink.api.common.typeutils.base.LongSerializer;
-
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.util.HashSet;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.common.state.State;
 
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
     private Consumer<K, V> consumer;
 
-    // TODO(ALEC): grab the programmatically generated topic name from ValueState
     static String TOPIC;
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
@@ -41,14 +26,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     protected final DataInputDeserializer dataInputView;   
 
     // /** Serializer for the state values. */
-    private TypeSerializer<V> valueSerializer;
-    private TypeSerializer<K> keySerializer;
-
-    private final SerializedCompositeKeyBuilder<K> sharedKeyBuilder;
     SerializedCompositeKeyBuilder keyBuilder;
 
-    // configured!
-    final String stateName;
     RedpandaValueState<K, N, V> state;
     String key_class_name;
     String value_class_name;
@@ -72,18 +51,16 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         this.dataOutputView = new DataOutputSerializer(128);
         this.dataInputView = new DataInputDeserializer();
 
-        sharedKeyBuilder = backend.getSharedKeyBuilder();
         keyBuilder = new SerializedCompositeKeyBuilder<>(
             backend.getKeySerializer(),
             backend.getKeyGroupPrefixBytes(),
             32
         );
 
-        // For PrintingJob, this can be found in WordCountMap.open() and is 'Word counter'
-        stateName = "Word counter"; 
         state = (RedpandaValueState<K, N, V>) state_;
 
         TOPIC = state.TOPIC;
+        System.out.println("Consuming from: " + TOPIC);
         key_class_name = state.key_class_name;
         value_class_name = state.value_class_name;
     }
@@ -137,36 +114,27 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     private void makeUpdate(K key, V value){
 
-        // keyBuilder.setKeyAndKeyGroup(key, 0);
         if (value == null) {
             // TODO: unimplemented
             // clear();
             return;
         }
         try {
-            // System.out.println("[REDPANDACONSUMER]kvStore put");
             state.kvStore.put(key, value);
         } 
         catch (java.lang.Exception e) {
-            System.out.println(e);
-            System.out.println(key);
-            System.out.println(value);
-            System.out.println(state.kvStore);
             throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
     }
 
     private void processRecord(ConsumerRecord<K, V> record){
-        // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
-        //         record.partition(), record.offset());
-
-        // TODO: like for the producer, we would ideally template type deciding so logic is not in hot path
+        System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
+                record.partition(), record.offset());
 
         try{
             K key = record.key();
             V value = record.value();
             
-            // TODO: keys must be of type long -- find dynamic way to do this
             this.makeUpdate(key, value);
             
             // Latency testing: after this point, the new value is available in the user-code
@@ -179,21 +147,21 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 curr_records += 1;
             }
 
-            if((curr_records % num_records == 0)){
-                if(warmup > 0){
-                    System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
-                    warmup -= 1;
-                }
-                else{
-                    System.out.println("===LATENCY TESTING RESULTS===");
-                }
+            // if((curr_records % num_records == 0)){
+            //     if(warmup > 0){
+            //         System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
+            //         warmup -= 1;
+            //     }
+            //     else{
+            //         System.out.println("===LATENCY TESTING RESULTS===");
+            //     }
 
-                System.out.printf("Average Latency (from Producer): %f\n\n", 
-                    (float) total_latency_from_produced / curr_records);
+            //     System.out.printf("Average Latency (from Producer): %f\n\n", 
+            //         (float) total_latency_from_produced / curr_records);
       
-                curr_records = 0;
-                total_latency_from_produced = 0L;
-            }
+            //     curr_records = 0;
+            //     total_latency_from_produced = 0L;
+            // }
             // System.out.printf("updated state for %s to %d\n", word_key, state.value());
         }
         catch (Exception exception){
@@ -218,6 +186,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata");
             cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription");
 
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$3");
+            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupAssignment");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1");
@@ -235,6 +205,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3");
             cl.loadClass("org.apache.kafka.common.metrics.stats.Value");
             cl.loadClass("org.apache.kafka.common.network.Selector$CloseMode");
+            cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment");
 
             cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord");
             cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable");
@@ -259,8 +230,6 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     // or it can be called synchronousy, i.e. with thread.run(), which does block the main thread
     public void run() {
 
-        keySerializer = (TypeSerializer<K>) state.keySerializer;
-        valueSerializer = (TypeSerializer<V>) state.valueSerializer;
 
         while (true) {
             // System.out.println("[REDPANDACONSUMER] About to poll!");

@@ -8,8 +8,17 @@ import org.apache.flink.api.java.tuple.Tuple2;
 public class Tokenizer implements FlatMapFunction<String, Tuple2<String, Long>> {
     @Override
     public void flatMap(String value, Collector<Tuple2<String, Long>> out) {
-      for (String token : value.split("\\s+")) {
-        out.collect(new Tuple2<String, Long>(token, 0L));
-      }
+        for (String token : value.split("\\s+")) {
+            
+            String processed = token.replaceAll("\\p{Punct}", "").toLowerCase();
+
+            if(processed.length() > 0){
+                out.collect(
+                    new Tuple2<String, Long>(
+                        processed, 0L
+                    )
+                );
+            }
+        }
     }
   }

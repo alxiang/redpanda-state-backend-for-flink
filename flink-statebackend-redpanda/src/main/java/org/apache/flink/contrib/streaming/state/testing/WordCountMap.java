@@ -9,9 +9,19 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.*;
 
+import org.apache.flink.contrib.streaming.state.RedpandaValueState;
+
 public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tuple2<String, Long>>{
 
     private transient ValueState<Long> count;
+    private String TOPIC;
+
+    public WordCountMap() {
+    }
+
+    public WordCountMap(String REDPANDA_TOPIC) {
+        TOPIC = REDPANDA_TOPIC;
+    }
 
     // https://ci.apache.org/projects/flink/flink-docs-release-1.1/apis/streaming/state.html
     @Override
@@ -41,5 +51,11 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
                         "Word counter", // the state name
                         TypeInformation.of(new TypeHint<Long>() {})); // type information
         count = getRuntimeContext().getState(descriptor);
+
+        if(TOPIC != null){
+            ((RedpandaValueState) count).TOPIC = TOPIC;
+            System.out.println("Re-set topic to: " + TOPIC);
+        }
+       
     }
 }

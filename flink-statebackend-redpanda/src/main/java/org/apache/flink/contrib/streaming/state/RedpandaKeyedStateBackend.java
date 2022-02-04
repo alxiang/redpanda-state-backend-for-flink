@@ -36,7 +36,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import javax.annotation.Nonnull;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,6 +49,9 @@ import java.util.stream.StreamSupport;
 
 /** An {@link AbstractKeyedStateBackend} that stores its state in a Memory Mapped File. */
 public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
+
+    public String REDPANDA_TOPIC;
+
     private static Logger log = Logger.getLogger("memory mapped file");
 
     // Serialized (namespace) + String (StateName) -> HashSet of Keys
@@ -138,13 +140,6 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         this.stateToStateName = stateToStateName;
         this.namespaceKeyStatenameToValue = namespaceKeyStatenameToValue;
         this.stateNameToState = stateNameToState;
-
-
-        // For now, run the thread synchronously to test for correctness of keys
-        // System.out.println("prior" + this.thread.getContextClassLoader());
-        // this.thread.setContextClassLoader(ClassLoader.getSystemClassLoader());
-        // System.out.println("posterior" +this.thread.getContextClassLoader());
-        
     }
 
     /** @see KeyedStateBackend */
@@ -311,6 +306,7 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
                                 RedpandaKeyedStateBackend.this);
         stateToStateName.put(is, stateDesc.getName());
         stateNameToState.put(stateDesc.getName(), is);
+
         return is;
     }
 
