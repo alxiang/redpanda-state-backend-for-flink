@@ -7,6 +7,8 @@ import org.apache.flink.api.java.tuple.Tuple2;
 
 // State backends
 import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
+import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
+
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 
 public class WikiBenchmark {
@@ -16,17 +18,18 @@ public class WikiBenchmark {
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		// env.setStateBackend(new RedpandaStateBackend());
-		env.setStateBackend(new HashMapStateBackend());
+		// env.setStateBackend(new HashMapStateBackend());
+		env.setStateBackend(new EmbeddedRocksDBStateBackend());
 		env.getConfig().setParallelism(1);
 		env.disableOperatorChaining();
 
 		// configure source
-        DataStreamSource<String> source = env.readTextFile("file:///Users/alecxiang/flink-1.13.2/wikipedia/wiki-1k.txt").setParallelism(5);
+        DataStreamSource<String> source = env.readTextFile("file:///Users/alecxiang/flink-1.13.2/wikipedia/wiki-100k.txt").setParallelism(5);
 
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer()).setParallelism(5);
 
 		DataStream<Tuple2<String, Long>> mapper = tokenized.keyBy(record -> record.f0)
-				.flatMap(new WordCountMap("Wiki")) 
+				.flatMap(new WordCountMap("Wiki", true)) 
 				.slotSharingGroup("map");
 
 		mapper.addSink(new DiscardingSink<>())

@@ -71,6 +71,12 @@ under the License.
 
 	<dependencies>
 
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-statebackend-rocksdb</artifactId>
+			<version>1.15-SNAPSHOT</version>
+		</dependency>
+
 		<!-- Jiffy integration dependencies-->
 
 		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
