@@ -178,6 +178,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
         try {
+            cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartition");
             cl.loadClass("org.apache.kafka.clients.NetworkClient$1");
             cl.loadClass("org.apache.kafka.clients.FetchSessionHandler");
             cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder");
