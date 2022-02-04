@@ -68,6 +68,7 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
             }
         }
         catch (Exception e) {
+            System.out.println("Can't reconfigure this backend.");
         }
     }
 }

@@ -5,8 +5,9 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.flink.api.java.tuple.Tuple2;
 
-// Redpanda imports
+// State backends
 import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
+import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 
 public class WikiBenchmark {
 
@@ -14,7 +15,8 @@ public class WikiBenchmark {
 
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-		env.setStateBackend(new RedpandaStateBackend());
+		// env.setStateBackend(new RedpandaStateBackend());
+		env.setStateBackend(new HashMapStateBackend());
 		env.getConfig().setParallelism(1);
 		env.disableOperatorChaining();
 
