@@ -19,7 +19,7 @@ public class WikiBenchmark {
 		env.disableOperatorChaining();
 
 		// configure source
-        DataStreamSource<String> source = env.readTextFile("file:///Users/alecxiang/flink-1.13.2/wikipedia/wiki-tiny.txt");
+        DataStreamSource<String> source = env.readTextFile("file:///Users/alecxiang/flink-1.13.2/wikipedia/wiki-100k.txt");
 
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 

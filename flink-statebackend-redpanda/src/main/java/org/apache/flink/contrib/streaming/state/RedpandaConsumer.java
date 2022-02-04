@@ -33,9 +33,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     String value_class_name;
 
     // For latency testing, keeping track of total latency over 100,000 records
-    Integer num_records = 100; //100_000;
+    Integer num_records = 10_000;
     Integer curr_records = 0;
-    Integer warmup = 25;
+    Integer warmup = 5;
 
     Long total_latency_from_produced = 0L;
 
@@ -128,8 +128,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     }
 
     private void processRecord(ConsumerRecord<K, V> record){
-        System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
-                record.partition(), record.offset());
+        // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
+                // record.partition(), record.offset());
 
         try{
             K key = record.key();
@@ -147,22 +147,21 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 curr_records += 1;
             }
 
-            // if((curr_records % num_records == 0)){
-            //     if(warmup > 0){
-            //         System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
-            //         warmup -= 1;
-            //     }
-            //     else{
-            //         System.out.println("===LATENCY TESTING RESULTS===");
-            //     }
+            if((curr_records % num_records == 0)){
+                if(warmup > 0){
+                    System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
+                    warmup -= 1;
+                }
+                else{
+                    System.out.println("===LATENCY TESTING RESULTS===");
+                }
 
-            //     System.out.printf("Average Latency (from Producer): %f\n\n", 
-            //         (float) total_latency_from_produced / curr_records);
+                System.out.printf("Average Latency (from Producer): %f\n\n", 
+                    (float) total_latency_from_produced / curr_records);
       
-            //     curr_records = 0;
-            //     total_latency_from_produced = 0L;
-            // }
-            // System.out.printf("updated state for %s to %d\n", word_key, state.value());
+                curr_records = 0;
+                total_latency_from_produced = 0L;
+            }
         }
         catch (Exception exception){
             System.out.println("Exception in processRecord(): " + exception);

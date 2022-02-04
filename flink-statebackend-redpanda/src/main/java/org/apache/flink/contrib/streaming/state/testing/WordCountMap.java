@@ -15,12 +15,18 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
 
     private transient ValueState<Long> count;
     private String TOPIC;
+    private boolean BATCH_WRITES = false;
 
     public WordCountMap() {
     }
 
     public WordCountMap(String REDPANDA_TOPIC) {
         TOPIC = REDPANDA_TOPIC;
+    }
+
+    public WordCountMap(String REDPANDA_TOPIC, boolean BATCH_WRITES_) {
+        TOPIC = REDPANDA_TOPIC;
+        BATCH_WRITES = BATCH_WRITES_;
     }
 
     // https://ci.apache.org/projects/flink/flink-docs-release-1.1/apis/streaming/state.html
@@ -32,7 +38,6 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
 
         // update count
         currentCount = currentCount == null ? 1L : currentCount + 1L;
-        // currentCount += 1; I commented out this extra +1 since I wasn't sure why we had it
         
         // update the state
         count.update(currentCount);
@@ -52,10 +57,17 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
                         TypeInformation.of(new TypeHint<Long>() {})); // type information
         count = getRuntimeContext().getState(descriptor);
 
-        if(TOPIC != null){
-            ((RedpandaValueState) count).TOPIC = TOPIC;
-            System.out.println("Re-set topic to: " + TOPIC);
+        try{
+            if(TOPIC != null){
+                ((RedpandaValueState) count).TOPIC = TOPIC;
+                ((RedpandaValueState) count).BATCH_WRITES = BATCH_WRITES;
+                System.out.println("Re-set topic to: " + TOPIC);
+                if(BATCH_WRITES){
+                    System.out.println("Batching writes set");
+                }
+            }
         }
-       
+        catch (Exception e) {
+        }
     }
 }

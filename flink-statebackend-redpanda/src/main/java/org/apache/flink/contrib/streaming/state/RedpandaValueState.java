@@ -66,9 +66,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private static int numKeyedStatesBuilt = 0;
     private boolean chronicleMapInitialized = false;
 
-    private KafkaProducer<K, V> producer;
+    private KafkaProducer<K, V> producer;    
     public String key_class_name;
     public String value_class_name;
+    //  if false, uses synchronous writes to Redpanda (lower latency and throughput)
+    public boolean BATCH_WRITES = false;
+
     public String TOPIC; // if not set, defaults to memory address of this object
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
@@ -165,8 +168,6 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                 + ".txt"
             );
 
-
-
             String hostAddress = "";
             try {
                 hostAddress = InetAddress.getLocalHost().getHostAddress();
@@ -203,10 +204,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // https://stackoverflow.com/questions/51521737/apache-kafka-linger-ms-and-batch-size-settings
         // https://stackoverflow.com/questions/66045267/kafka-setting-high-linger-ms-and-batch-size-not-helping
         // 1MB, 50ms linger gives good throughput
-        // compression didn't help
-        // props.put("batch.size", 1024*1024);
-        // props.put("buffer.size", 1024*1024);
-        // props.put("linger.ms", 50);
+        if(BATCH_WRITES){
+            System.out.println("Batching writes before sending them to Redpanda");
+            props.put("batch.size", 1024*1024);
+            props.put("buffer.size", 1024*1024);
+            props.put("linger.ms", 10);
+        }
 
         // for improving synchronous writing
         props.put("acks", "1"); // acknowledgement only from leader broker
@@ -260,7 +263,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         }
 
         try {
-            this.producer.send(record).get();
+            if(BATCH_WRITES == false){
+                this.producer.send(record).get();
+            }
+            else{
+                this.producer.send(record);
+            }
         }
         catch(Exception e) {
             System.out.println("ERROR SENDING RECORD");
