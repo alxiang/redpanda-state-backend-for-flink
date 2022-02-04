@@ -68,7 +68,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<K, V> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-3.0");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.0");
 
         // performance configs
         props.put("session.timeout.ms", 30000);
@@ -227,10 +227,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
     
-    // this can be called asynchronously, i.e. with thread.start(), which does not block the main thread
-    // or it can be called synchronousy, i.e. with thread.run(), which does block the main thread
     public void run() {
-
 
         while (true) {
             // System.out.println("[REDPANDACONSUMER] About to poll!");
