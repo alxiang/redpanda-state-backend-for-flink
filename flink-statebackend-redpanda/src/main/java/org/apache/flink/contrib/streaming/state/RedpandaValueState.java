@@ -29,7 +29,12 @@ import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
 import org.apache.flink.runtime.state.internal.InternalValueState;
 import org.apache.flink.util.FlinkRuntimeException;
-import org.apache.flink.util.FlinkUserCodeClassLoader;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Set;
+import java.util.logging.Logger;
+
 // Redpanda imports
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
@@ -40,14 +45,10 @@ import java.util.Properties;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Set;
-import java.util.logging.Logger;
 
 // Jiffy Client imports
 import jiffy.JiffyClient;
-
+import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -174,9 +175,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             );
 
             String hostAddress = "";
+            String hostAddress_ = "";
             try {
-                hostAddress = InetAddress.getLocalHost().getHostAddress();
+                hostAddress = InetAddressLocalHostUtil.getLocalHostAsString();
+                hostAddress_ = InetAddress.getLocalHost().getHostAddress();
                 System.out.println("Got the local host address as: " + hostAddress);
+                System.out.println("[OLD] Got the local host address as: " + hostAddress_);
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             }
