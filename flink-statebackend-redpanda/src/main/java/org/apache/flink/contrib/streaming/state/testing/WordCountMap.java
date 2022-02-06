@@ -16,6 +16,7 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
     private transient ValueState<Long> count;
     private String TOPIC;
     private boolean BATCH_WRITES = false;
+    private String directory_daemon_address;
 
     public WordCountMap() {
     }
@@ -24,9 +25,10 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
         TOPIC = REDPANDA_TOPIC;
     }
 
-    public WordCountMap(String REDPANDA_TOPIC, boolean BATCH_WRITES_) {
+    public WordCountMap(String REDPANDA_TOPIC, boolean BATCH_WRITES_, String directory_daemon_address_) {
         TOPIC = REDPANDA_TOPIC;
         BATCH_WRITES = BATCH_WRITES_;
+        directory_daemon_address = directory_daemon_address_;
     }
 
     // https://ci.apache.org/projects/flink/flink-docs-release-1.1/apis/streaming/state.html
@@ -61,6 +63,7 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
             if(TOPIC != null){
                 ((RedpandaValueState) count).TOPIC = TOPIC;
                 ((RedpandaValueState) count).BATCH_WRITES = BATCH_WRITES;
+                ((RedpandaValueState) count).directory_daemon_address = directory_daemon_address;
                 System.out.println("Re-set topic to: " + TOPIC);
                 if(BATCH_WRITES){
                     System.out.println("Batching writes set");

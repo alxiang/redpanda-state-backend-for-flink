@@ -20,10 +20,6 @@ public class WikiBenchmark {
 		env.getConfig().setParallelism(1);
 		env.disableOperatorChaining();
 
-		System.out.println("args: " + args[0]);
-		System.out.println("args: " + args[1]);
-		System.out.println("args: " + args[2]);
-
 		if(args.length >= 1){
 			if(args[0].equals("redpanda")){
 				System.out.println("Using RedpandaStateBackend");
@@ -39,8 +35,10 @@ public class WikiBenchmark {
 			}
 		}
 
+		// command line options
 		String TOPIC = "Wiki";
 		boolean async = false;
+		String directory_daemon_address = "127.0.0.1";
 
 		if(args.length >= 2){
 			if(args[1].equals("true")){
@@ -49,6 +47,9 @@ public class WikiBenchmark {
 		}
 		if(args.length >= 3){
 			TOPIC = args[2];
+		}
+		if(args.length >= 4){
+			directory_daemon_address = args[3];
 		}	
 
 		// configure source
@@ -57,7 +58,7 @@ public class WikiBenchmark {
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer()).setParallelism(5);
 
 		DataStream<Tuple2<String, Long>> mapper = tokenized.keyBy(record -> record.f0)
-				.flatMap(new WordCountMap(TOPIC, async)) 
+				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address)) 
 				.slotSharingGroup("map");
 
 		mapper.addSink(new DiscardingSink<>())

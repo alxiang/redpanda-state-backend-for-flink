@@ -76,10 +76,11 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
 
     // Our Redpanda thread
-    public RedpandaConsumer thread;
+    public RedpandaConsumer<K, V, N> thread;
 
     // Jiffy integration
     JiffyClient client;
+    public String directory_daemon_address;
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -103,17 +104,21 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // using memory address of the current class to avoid collisions
         TOPIC = this.toString().substring(this.toString().lastIndexOf("@")+1);
         System.out.println("Topic not configured, defaulting to: " + TOPIC);
-        
+    }
+
+    public void setUpComponents() throws IOException {
+
+        // Setup Jiffy connection
         try {
-            this.client = new JiffyClient("127.0.0.1", 9090, 9091);
+            System.out.println("Trying to connect to Jiffy at address: " + directory_daemon_address);
+            this.client = new JiffyClient(directory_daemon_address, 9090, 9091);
         } catch (Exception e) {
             System.out.println("Failed to connect to Jiffy with client, are the Jiffy directory and storage daemons running?");
             System.out.println(e);
             System.exit(-1);
         }
-    }
 
-    public void setUpChronicleMapAndRedpandaThread() throws IOException {
+        // Setup ChronicleMap
         this.kvStore = createChronicleMap();
 
         // Create Redpanda producer
@@ -308,7 +313,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public V value() throws IOException {
 
         if (!this.chronicleMapInitialized) {
-            setUpChronicleMapAndRedpandaThread();
+            setUpComponents();
             this.chronicleMapInitialized = true;
         }
 
@@ -329,7 +334,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public void update(V value) throws IOException {
 
         if (!this.chronicleMapInitialized) {
-            setUpChronicleMapAndRedpandaThread();
+            setUpComponents();
             this.chronicleMapInitialized = true;
         }
 

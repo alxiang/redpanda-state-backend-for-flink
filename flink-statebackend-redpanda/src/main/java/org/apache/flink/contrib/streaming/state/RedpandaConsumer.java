@@ -67,7 +67,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     private Consumer<K, V> createConsumer() {
         final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, state.directory_daemon_address+":9192");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.2");
 
         // performance configs
