@@ -20,7 +20,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<K, V> consumer;
 
     static String TOPIC;
-    private final static String BOOTSTRAP_SERVERS = "localhost:9192";
+    private final static String BOOTSTRAP_SERVERS = "localhost:9192"; //"192.168.122.131:9192";
 
     protected final DataOutputSerializer dataOutputView;
     protected final DataInputDeserializer dataInputView;   
@@ -68,7 +68,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<K, V> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.0");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.2");
 
         // performance configs
         props.put("session.timeout.ms", 30000);
@@ -177,6 +177,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
         try {
+            cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartitionCollection");
             cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartition");
             cl.loadClass("org.apache.kafka.clients.NetworkClient$1");
             cl.loadClass("org.apache.kafka.clients.FetchSessionHandler");
