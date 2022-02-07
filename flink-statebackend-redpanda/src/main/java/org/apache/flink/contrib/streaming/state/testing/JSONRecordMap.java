@@ -6,6 +6,7 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.*;
+import org.json.JSONObject;
 
 import org.apache.flink.contrib.streaming.state.RedpandaValueState;
 
@@ -33,15 +34,17 @@ public class JSONRecordMap extends RichFlatMapFunction<String, String>{
     @Override
     public void flatMap(String input, Collector<String> out) throws Exception {        
         // update the state
-        records.update(input); 
-        out.collect(input);
+        JSONObject jsonObject = new JSONObject(input);
+        String value = jsonObject.getString("payload");
+        records.update(value); 
+        out.collect(value);
     }
 
     @Override
     public void open(Configuration config) {
         ValueStateDescriptor<String> descriptor =
                 new ValueStateDescriptor<String>(
-                        "Word counter", // the state name
+                        "JSON Records", // the state name
                         TypeInformation.of(new TypeHint<String>() {})); // type information
         records = getRuntimeContext().getState(descriptor);
 

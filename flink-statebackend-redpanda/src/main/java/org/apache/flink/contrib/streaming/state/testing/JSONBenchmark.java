@@ -3,7 +3,6 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
-import org.apache.flink.api.java.tuple.Tuple2;
 
 // State backends
 import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
@@ -55,7 +54,7 @@ public class JSONBenchmark {
 		// configure source
         DataStreamSource<String> source = env.readTextFile("file:///Users/andrewmilas/dev/cpsc438/flink-1.13.2/redpanda-state-backend-for-flink/json-records/json-10k.txt").setParallelism(5);
 
-		DataStream<String> mapper = source.keyBy(record -> record)
+		DataStream<String> mapper = source.keyBy(record -> record.substring(8, 44))
 				.flatMap(new JSONRecordMap(TOPIC, async, directory_daemon_address)) 
 				.slotSharingGroup("map");
 

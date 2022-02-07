@@ -77,6 +77,12 @@ under the License.
 			<version>1.15-SNAPSHOT</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20090211</version>
+		</dependency>
+
 		<!-- Jiffy integration dependencies-->
 
 		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
