@@ -14,31 +14,34 @@ RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 # Install Redpanda
-RUN curl -1sLf 'https://packages.vectorized.io/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.deb.sh'
-RUN su -E bash
-RUN su apt install redpanda -y
-RUN su rpk config bootstrap --id 0
-RUN su systemctl start redpanda-tuner redpanda
+RUN curl -1sLf 'https://packages.vectorized.io/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.deb.sh' | bash
+RUN apt install -y redpanda
+RUN rpk config bootstrap --id 0
+# RUN systemctl start redpanda-tuner redpanda
 
 # Clone Jiffy
+RUN apt install -y git
 RUN git clone git://github.com/alxiang/jiffy.git && cd jiffy && mkdir -p build && cd build
 
 # Install Jiffy requirements
-RUN su snap install cmake --classic
-RUN su apt-get update
-RUN su apt-get install -y build-essential
-RUN su apt-get install libnuma-dev
-RUN su apt install libevent-dev
-RUN su apt install automake
-RUN su apt-get install libssl-dev
-RUN su apt install maven
-RUN su apt install python-pip
+# RUN snap install cmake --classic
+RUN apt-get install cmake -y
+RUN echo cmake --version
+RUN apt-get update
+RUN apt-get install -y build-essential
+RUN apt-get install -y libnuma-dev
+RUN apt install -y libevent-dev
+RUN apt install -y automake
+RUN apt-get install -y libssl-dev
+RUN apt install -y maven
+RUN apt install -y python3-pip
 RUN pip install setuptools
 
 # Build Jiffy
-RUN cmake ..
-RUN make -j && su make install
+RUN echo $(java --version)
+RUN echo $JAVA_HOME
+RUN cd jiffy/build && cmake .. && make -j && make install
 
 #  Start a storage daemon
-RUN cd .. && storaged
+# RUN cd .. && storaged
 
