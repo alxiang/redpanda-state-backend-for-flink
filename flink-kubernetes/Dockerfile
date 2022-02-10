@@ -14,6 +14,7 @@ RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 # Install Redpanda
+RUN apt-get install -y curl
 RUN curl -1sLf 'https://packages.vectorized.io/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.deb.sh' | bash
 RUN apt install -y redpanda
 RUN rpk config bootstrap --id 0
@@ -35,11 +36,22 @@ RUN apt install -y automake
 RUN apt-get install -y libssl-dev
 RUN apt install -y maven
 RUN apt install -y python3-pip
-RUN pip install setuptools
+RUN pip3 install setuptools
 
 # Build Jiffy
-RUN echo $(java --version)
-RUN echo $JAVA_HOME
+# RUN echo $(java --version)
+# RUN echo $JAVA_HOME
+# RUN echo $(which java)
+# RUN cp /usr/local/openjdk-11/bin/java /usr/bin/
+
+# RUN ls /usr/local/openjdk-11/bin/
+# RUN find /usr/local/openjdk-11 -name javac
+# RUN cp /usr/local/openjdk-11/bin/javac /usr/bin/
+RUN apt install -y openjdk-11-jdk
+RUN which javac
+RUN javac --version
+RUN which java
+RUN java --version
 RUN cd jiffy/build && cmake .. && make -j && make install
 
 #  Start a storage daemon
