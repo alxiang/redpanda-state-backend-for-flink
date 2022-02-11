@@ -41,7 +41,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "git clone git@github.com:alxiang/redpanda-state-backend-for-flink.git && chown -R flink:flink redpanda-state-backend-for-flink && cd jiffy && storaged &"]            
+              command: ["/bin/sh", "-c", "git clone git@github.com:alxiang/redpanda-state-backend-for-flink.git && chown -R flink:flink redpanda-state-backend-for-flink; cd jiffy && storaged &"]            
               # command: ["/bin/sh", "-c", "chown -R flink:flink resources && cd jiffy && storaged &"]            
       
       volumes:
