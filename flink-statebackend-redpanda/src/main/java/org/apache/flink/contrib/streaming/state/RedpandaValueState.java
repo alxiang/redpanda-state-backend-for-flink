@@ -203,7 +203,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // Configuring the producer
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                                            BOOTSTRAP_SERVERS);
+                                            directory_daemon_address+":9192");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer (ValueState)");
 
         this.key_class_name = ((Class<K>) backend.getCurrentKey().getClass()).getName();
