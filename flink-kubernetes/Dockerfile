@@ -43,7 +43,7 @@ RUN pip3 install setuptools
 RUN apt install -y openjdk-11-jdk
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 RUN export JAVA_HOME
-RUN cd jiffy && git checkout cluster && cd build && cmake .. && make -j && make install
+RUN cd jiffy && git checkout cluster && cd build && cmake .. && make -j 4 && make install
 
 #  Start a storage daemon
 # RUN cd .. && storaged
