@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flink-taskmanager
 spec:
-  replicas: 2
+  replicas: 5
   selector:
     matchLabels:
       app: flink
@@ -39,7 +39,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "cd jiffy && storaged &"]
+              command: ["/bin/sh", "-c", "git@github.com:alxiang/redpanda-state-backend-for-flink.git && cd jiffy && storaged &"]            
       
       volumes:
       - name: flink-config-volume
