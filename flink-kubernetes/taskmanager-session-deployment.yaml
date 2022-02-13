@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flink-taskmanager
 spec:
-  replicas: 5
+  replicas: 8
   selector:
     matchLabels:
       app: flink
@@ -17,6 +17,13 @@ spec:
       containers:
       - name: taskmanager
         image: alxiang/redpanda-worker:3.0 # apache/flink:1.13-scala_2.11-java11
+        resources:
+          requests:
+            memory: "3Gi"
+            cpu: "3"
+          limits:
+            memory: "3Gi"
+            cpu: "3"
         args: ["taskmanager"]
         ports:
         - containerPort: 6122
