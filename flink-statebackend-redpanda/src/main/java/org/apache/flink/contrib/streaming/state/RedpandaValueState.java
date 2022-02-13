@@ -51,6 +51,7 @@ import jiffy.JiffyClient;
 import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * {@link ValueState} implementation that stores state in a Memory Mapped File.
@@ -75,6 +76,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     public String TOPIC; // if not set, defaults to memory address of this object
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
+    String hostAddress;
 
     // Our Redpanda thread
     public RedpandaConsumer<K, V, N> thread;
@@ -174,11 +176,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                 + ".txt"
             );
 
-            String hostAddress = "";
-            String hostAddress_ = "";
             try {
-                hostAddress = InetAddressLocalHostUtil.getLocalHostAsString();
-                hostAddress_ = InetAddress.getLocalHost().getHostAddress();
+                this.hostAddress = InetAddressLocalHostUtil.getLocalHostAsString();
+                String hostAddress_ = InetAddress.getLocalHost().getHostAddress();
                 System.out.println("Got the local host address as: " + hostAddress);
                 System.out.println("[OLD] Got the local host address as: " + hostAddress_);
             } catch (UnknownHostException e) {
@@ -270,6 +270,8 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             String error_message = String.format("Type combination %s and %s not supported yet.", key_class_name, value_class_name);
             throw new java.lang.UnsupportedOperationException(error_message);
         }
+
+        record.headers().add("origin", this.hostAddress.getBytes(StandardCharsets.UTF_8));
 
         try {
             if(BATCH_WRITES == false){

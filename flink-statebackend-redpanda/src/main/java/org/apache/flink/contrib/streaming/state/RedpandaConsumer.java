@@ -1,10 +1,12 @@
 package org.apache.flink.contrib.streaming.state;
 
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
@@ -13,6 +15,8 @@ import org.apache.flink.core.memory.DataInputDeserializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
 import org.apache.flink.util.FlinkRuntimeException;
+
+import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 
 public class RedpandaConsumer<K, V, N> extends Thread{
 
@@ -40,6 +44,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     Long total_latency_from_produced = 0L;
 
     Boolean latency_printed = false;
+    String hostAddress;
 
     public RedpandaConsumer(
         RedpandaKeyedStateBackend<K> keyedBackend,
@@ -63,6 +68,14 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         System.out.println("Consuming from: " + TOPIC);
         key_class_name = state.key_class_name;
         value_class_name = state.value_class_name;
+
+        // for latency testing
+        try {
+            this.hostAddress = InetAddressLocalHostUtil.getLocalHostAsString();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        
     }
 
     private Consumer<K, V> createConsumer() {
@@ -127,6 +140,50 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
 
+    private void latencyTesting(ConsumerRecord<K, V> record){
+
+        Boolean flag = false;
+
+        for (Header header : record.headers()) {
+            if(header.key().equals("origin")){
+                String origin_address = new String(header.value());
+                if(origin_address.equals(this.hostAddress)){
+                    flag = true;
+                }
+            }
+        }
+
+        if(!flag){
+            return;
+        }
+
+        // Latency testing: after this point, the new value is available in the user-code
+        if(curr_records < num_records){
+            long currentTime = System.currentTimeMillis();
+
+            total_latency_from_produced += (currentTime - record.timestamp());
+            assert(currentTime - record.timestamp() > 0);
+            
+            curr_records += 1;
+        }
+
+        if((curr_records % num_records == 0)){
+            if(warmup > 0){
+                System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
+                warmup -= 1;
+            }
+            else{
+                System.out.println("===LATENCY TESTING RESULTS===");
+            }
+
+            System.out.printf("Average Latency (from Producer): %f\n\n", 
+                (float) total_latency_from_produced / curr_records);
+  
+            curr_records = 0;
+            total_latency_from_produced = 0L;
+        }
+    }
+
     private void processRecord(ConsumerRecord<K, V> record){
         // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
                 // record.partition(), record.offset());
@@ -136,32 +193,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             V value = record.value();
             
             this.makeUpdate(key, value);
-            
-            // Latency testing: after this point, the new value is available in the user-code
-            if(curr_records < num_records){
-                long currentTime = System.currentTimeMillis();
 
-                total_latency_from_produced += (currentTime - record.timestamp());
-                assert(currentTime - record.timestamp() > 0);
-                
-                curr_records += 1;
-            }
-
-            if((curr_records % num_records == 0)){
-                if(warmup > 0){
-                    System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
-                    warmup -= 1;
-                }
-                else{
-                    System.out.println("===LATENCY TESTING RESULTS===");
-                }
-
-                System.out.printf("Average Latency (from Producer): %f\n\n", 
-                    (float) total_latency_from_produced / curr_records);
-      
-                curr_records = 0;
-                total_latency_from_produced = 0L;
-            }
+            latencyTesting(record);
         }
         catch (Exception exception){
             System.out.println("Exception in processRecord(): " + exception);
