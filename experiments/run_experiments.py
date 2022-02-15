@@ -12,7 +12,6 @@ print(root_path)
 #Assumes flink redpanda-state-backend-for-flink is in flink folder. If it isn't, can set flink path manually
 # flink_path = pathlib.Path(__file__).parent.parent.parent.absolute()
 flink_path = "/home/alec/flink-1.13.2"
-print()
 
 #Mapping of a benchmark to its file name, edit whenever creating a new benchmark
 benchmark_map = {
@@ -73,7 +72,7 @@ def run_experiment_trials(args):
                     benchmark
                 ], capture_output=True)
                 
-                assert(output.returncode == 0)
+                # assert(output.returncode == 0)
 
             procs = []
             for t in range(jobs):
@@ -131,18 +130,18 @@ def main():
     if args.backend != "all":
         run_experiment_trials(args)
     else:
-        # args.benchmark = "redpanda"
-        # args.redpanda_async = "true"
+        args.backend = "redpanda"
+        args.redpanda_async = "true"
+        run_experiment_trials(args)
+
+        # args.backend = "redpanda"
+        # args.redpanda_async = "false"
         # run_experiment_trials(args)
 
-        args.benchmark = "redpanda"
-        args.redpanda_async = "false"
+        args.backend = "rocksdb"
         run_experiment_trials(args)
 
-        args.benchmark = "rocksdb"
-        run_experiment_trials(args)
-
-        args.benchmark = "hashmap"
+        args.backend = "hashmap"
         run_experiment_trials(args)
 
 if __name__ ==  "__main__":
