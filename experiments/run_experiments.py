@@ -89,14 +89,28 @@ def run_experiment_trials(args):
                 start_location = text_output.find("Job Runtime: ")+len("Job Runtime: ")
                 if start_location < len("Job Runtime: "):
                     print("Trial resulted in error")
-                    result.append({"trial": i, "time": "ERROR", "job": t})
+                    result.append({
+                        "trial": i, 
+                        "time": "ERROR", 
+                        "job": t, 
+                        "backend": backend, 
+                        "benchmark": benchmark,
+                        "redpanda_async": redpanda_async
+                    })
 
                     print(text_output)
                 else:
                     end_location = start_location+text_output[start_location:].find("ms") #Not sure if this is safe to get the time if it isn't always in ms
                     time_taken = int(text_output[start_location:end_location])
                     print(f"Job {t} (Trial {i}) finished with time {time_taken} ms")
-                    result.append({"trial": i, "time": time_taken, "job": t})
+                    result.append({
+                        "trial": i, 
+                        "time": time_taken, 
+                        "job": t,
+                        "backend": backend, 
+                        "benchmark": benchmark,
+                        "redpanda_async": redpanda_async
+                    })
 
         json.dump(result, file, indent=4)
 
@@ -114,12 +128,12 @@ def main():
         print("Can't find benchmark with name", args.benchmark)
         return
 
-    if args.backend:
+    if args.backend != "all":
         run_experiment_trials(args)
     else:
-        args.benchmark = "redpanda"
-        args.redpanda_async = "true"
-        run_experiment_trials(args)
+        # args.benchmark = "redpanda"
+        # args.redpanda_async = "true"
+        # run_experiment_trials(args)
 
         args.benchmark = "redpanda"
         args.redpanda_async = "false"
