@@ -1,10 +1,13 @@
 import pathlib
 import argparse
-import datetime;
+import datetime
+from datetime import timezone
 import json
 import subprocess
 import sys
 import time
+import kubernetes.client
+from kubernetes import client, config
 
 root_path = "/home/alec/flink-1.13.2/redpanda-state-backend-for-flink"# pathlib.Path(__file__).parent.parent.absolute()
 print(root_path)
@@ -35,7 +38,7 @@ def launch_flink_job(args, flink_path, root_path):
         f"org.apache.flink.contrib.streaming.state.testing.{benchmark_map[benchmark]}",
         f"{root_path}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
         backend,
-        "true", # whether to use redpanda async batching
+        redpanda_async, # whether to use redpanda async batching
         benchmark, # topic
         "192.168.122.131" # master machine address
     ], stdout=subprocess.PIPE)
@@ -43,7 +46,7 @@ def launch_flink_job(args, flink_path, root_path):
     return proc
 
 
-def run_experiment_trials(args):
+def run_experiment_trials(args, pods):
 
     k = args.k
     benchmark = args.benchmark
@@ -59,6 +62,7 @@ def run_experiment_trials(args):
         result = []
         for i in range(k):
             print(f"Starting Trial {i}")
+            start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
 
             # clear the redpanda topic (if using redpanda backend)
             if(backend == "redpanda"):
@@ -111,7 +115,47 @@ def run_experiment_trials(args):
                         "redpanda_async": redpanda_async
                     })
 
+            # get the latency from kubernetes logs
+            if(backend == "redpanda"):
+                latencies = get_latencies_from_pod_logs(pods, start_time)
+            
+
         json.dump(result, file, indent=4)
+
+def get_kube_pods():
+
+    config.load_kube_config("/home/alec/.kube/config")
+
+    v1 = kubernetes.client.CoreV1Api()
+    print("Listing task executor pods with their IPs:")
+
+    pods = []
+    ret = v1.list_pod_for_all_namespaces(watch=False)
+    for i in ret.items:
+        if(i.metadata.name.find("flink-taskmanager") != -1):
+            print("%s\t%s\t%s" % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))
+            pods.append(i.metadata.name)
+
+    return pods
+
+def get_latencies_from_pod_logs(pods, start_time):
+
+    logs = []
+
+    for pod in pods:
+
+        output = subprocess.run([
+            'kubectl',
+            'logs',
+            f'--since-time={start_time}',
+            pod
+        ], capture_output=True)
+        logs.append(output)
+
+    print(logs)
+
+
+    
 
 def main():
     parser = argparse.ArgumentParser()
@@ -123,26 +167,29 @@ def main():
     parser.add_argument('jobs', type=int, default=1)
     args = parser.parse_args()
 
+    pods = get_kube_pods()
+    print(pods)
+
     if args.benchmark not in benchmark_map:
         print("Can't find benchmark with name", args.benchmark)
         return
 
     if args.backend != "all":
-        run_experiment_trials(args)
+        run_experiment_trials(args, pods)
     else:
         args.backend = "redpanda"
         args.redpanda_async = "true"
-        run_experiment_trials(args)
+        run_experiment_trials(args, pods)
 
         # args.backend = "redpanda"
         # args.redpanda_async = "false"
         # run_experiment_trials(args)
 
         args.backend = "rocksdb"
-        run_experiment_trials(args)
+        run_experiment_trials(args, pods)
 
         args.backend = "hashmap"
-        run_experiment_trials(args)
+        run_experiment_trials(args, pods)
 
 if __name__ ==  "__main__":
     main()
