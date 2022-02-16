@@ -39,7 +39,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     String value_class_name;
 
     // For latency testing, keeping track of total latency over 100,000 records
-    Integer num_records = 100_000;
+    Integer num_records = 5_000;
     Integer curr_records = 0;
     Integer warmup = 5;
 
@@ -95,8 +95,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // props.put("fetch.min.bytes", 100000000);
         props.put("max.poll.records", 250000);
 
-        props.put("fetch.max.bytes", 524288000);
-        props.put("max.partition.fetch.bytes", 524288000);
+        props.put("fetch.max.bytes", 52428800);
+        props.put("max.partition.fetch.bytes", 52428800);
 
         // Create the consumer using props.
         if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
@@ -219,6 +219,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
         try {
+            cl.loadClass("org.apache.kafka.common.message.OffsetForLeaderEpochRequestData$OffsetForLeaderTopicCollection");
+            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$4");
             cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartitionCollection");
             cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartition");
             cl.loadClass("org.apache.kafka.clients.NetworkClient$1");

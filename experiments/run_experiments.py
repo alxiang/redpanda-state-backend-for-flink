@@ -46,7 +46,7 @@ def launch_flink_job(args, flink_path, root_path):
     return proc
 
 
-def run_experiment_trials(args, pods):
+def run_experiment_trials(args):
 
     k = args.k
     benchmark = args.benchmark
@@ -62,6 +62,8 @@ def run_experiment_trials(args, pods):
         result = []
         for i in range(k):
             print(f"Starting Trial {i}")
+            # pods = reset_kube_cluster(args)
+            pods = get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
             print(start_time)
 
@@ -135,13 +137,13 @@ def get_kube_pods():
     config.load_kube_config("/home/alec/.kube/config")
 
     v1 = kubernetes.client.CoreV1Api()
-    print("Listing task executor pods with their IPs:")
+    # print("Listing task executor pods with their IPs:")
 
     pods = []
     ret = v1.list_pod_for_all_namespaces(watch=False)
     for i in ret.items:
-        if(i.metadata.name.find("flink-taskmanager") != -1):
-            print("%s\t%s\t%s" % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))
+        if(i.metadata.name.find("flink-taskmanager") != -1 and i.status.pod_ip is not None):
+            # print("%s\t%s\t%s" % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))
             pods.append(i.metadata.name)
 
     return pods
@@ -167,7 +169,7 @@ def get_latencies_from_pod_logs(pods, start_time):
         latencies = []
         log_as_list = log.split("\n")
         for x in log_as_list:
-            # print(x)
+            print(x)
             if(x.find("[LATENCY]") != -1):
                 # print(x.split(" "))
                 _, latency = x.split(" ")
@@ -178,7 +180,31 @@ def get_latencies_from_pod_logs(pods, start_time):
 
     return res
 
+def reset_kube_cluster(args):
+    print("Reseting the kube cluster")
+    output = subprocess.run([
+            'kubectl',
+            'delete',
+            '-f',
+            f'{root_path}/flink-kubernetes/taskmanager-session-deployment.yaml'
+        ], capture_output=True)
 
+    time.sleep(3)
+
+    output = subprocess.run([
+            'kubectl',
+            'create',
+            '-f',
+            f'{root_path}/flink-kubernetes/taskmanager-session-deployment.yaml'
+        ], capture_output=True)
+
+    while(len(get_kube_pods()) < args.jobs):
+        # print(len(get_kube_pods()), args.jobs)
+        time.sleep(1)
+
+
+    print("Cluster has been reset")
+    return get_kube_pods()
     
 
 def main():
@@ -191,29 +217,29 @@ def main():
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()
 
-    pods = get_kube_pods()
-    print(pods)
+    # pods = get_kube_pods()
+    # print(pods)
 
     if args.benchmark not in benchmark_map:
         print("Can't find benchmark with name", args.benchmark)
         return
 
     if args.backend != "all":
-        run_experiment_trials(args, pods)
+        run_experiment_trials(args)
     else:
         args.backend = "redpanda"
         args.redpanda_async = "true"
-        run_experiment_trials(args, pods)
+        run_experiment_trials(args)
 
         # args.backend = "redpanda"
         # args.redpanda_async = "false"
         # run_experiment_trials(args)
 
         args.backend = "rocksdb"
-        run_experiment_trials(args, pods)
+        run_experiment_trials(args)
 
         args.backend = "hashmap"
-        run_experiment_trials(args, pods)
+        run_experiment_trials(args)
 
 if __name__ ==  "__main__":
     main()
