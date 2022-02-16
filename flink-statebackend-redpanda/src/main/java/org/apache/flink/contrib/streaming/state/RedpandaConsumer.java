@@ -18,6 +18,8 @@ import org.apache.flink.util.FlinkRuntimeException;
 
 import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 
+import java.nio.charset.StandardCharsets;
+
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
@@ -81,7 +83,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<K, V> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, state.directory_daemon_address+":9192");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.2");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.3");
 
         // performance configs
         props.put("session.timeout.ms", 30000);
@@ -145,8 +147,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         Boolean flag = false;
 
         for (Header header : record.headers()) {
+            // System.out.println("LOOOK");
+            // System.out.println(header.key());
+            // System.out.println(this.hostAddress);
             if(header.key().equals("origin")){
-                String origin_address = new String(header.value());
+                String origin_address = new String(header.value(), StandardCharsets.UTF_8);
+                // System.out.println(origin_address);
                 if(origin_address.equals(this.hostAddress)){
                     flag = true;
                 }

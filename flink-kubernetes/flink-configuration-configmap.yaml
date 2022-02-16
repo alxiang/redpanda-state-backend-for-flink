@@ -17,7 +17,7 @@ data:
     parallelism.default: 1    
   log4j-console.properties: |+
     # This affects logging for both user code and Flink
-    rootLogger.level = INFO
+    rootLogger.level = OFF
     rootLogger.appenderRef.console.ref = ConsoleAppender
     rootLogger.appenderRef.rolling.ref = RollingFileAppender
 
@@ -29,13 +29,13 @@ data:
     # log level INFO. The root logger does not override this. You have to manually
     # change the log levels here.
     logger.akka.name = akka
-    logger.akka.level = INFO
+    logger.akka.level = OFF
     logger.kafka.name= org.apache.kafka
-    logger.kafka.level = INFO
+    logger.kafka.level = OFF
     logger.hadoop.name = org.apache.hadoop
-    logger.hadoop.level = INFO
+    logger.hadoop.level = OFF
     logger.zookeeper.name = org.apache.zookeeper
-    logger.zookeeper.level = INFO
+    logger.zookeeper.level = OFF
 
     # Log all infos to the console
     appender.console.name = ConsoleAppender

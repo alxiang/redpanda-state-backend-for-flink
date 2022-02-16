@@ -63,6 +63,7 @@ def run_experiment_trials(args, pods):
         for i in range(k):
             print(f"Starting Trial {i}")
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
+            print(start_time)
 
             # clear the redpanda topic (if using redpanda backend)
             if(backend == "redpanda"):
@@ -150,7 +151,7 @@ def get_latencies_from_pod_logs(pods, start_time):
             f'--since-time={start_time}',
             pod
         ], capture_output=True)
-        logs.append(output)
+        logs.append(output.stdout.decode("utf-8"))
 
     print(logs)
 
@@ -161,10 +162,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('k', type=int)
     parser.add_argument('benchmark')
-    parser.add_argument('backend', nargs='?', default="")
-    parser.add_argument('port', type=str)
+    parser.add_argument('backend')
     parser.add_argument('redpanda_async', type=str, default='true')
     parser.add_argument('jobs', type=int, default=1)
+    parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()
 
     pods = get_kube_pods()
