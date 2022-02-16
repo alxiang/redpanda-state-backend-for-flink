@@ -217,7 +217,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             System.out.println("Batching writes before sending them to Redpanda");
             props.put("batch.size", 1024*1024);
             props.put("buffer.size", 1024*1024);
-            props.put("linger.ms", 10);
+            props.put("linger.ms", 3);
         }
 
         // for improving synchronous writing

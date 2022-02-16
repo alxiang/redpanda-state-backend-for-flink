@@ -19,11 +19,11 @@ spec:
         image: alxiang/redpanda-worker:3.0 # apache/flink:1.13-scala_2.11-java11
         resources:
           requests:
-            memory: "3Gi"
-            cpu: "3"
+            memory: "8Gi"
+            cpu: "6"
           limits:
-            memory: "3Gi"
-            cpu: "3"
+            memory: "8Gi"
+            cpu: "6"
         args: ["taskmanager"]
         ports:
         - containerPort: 6122

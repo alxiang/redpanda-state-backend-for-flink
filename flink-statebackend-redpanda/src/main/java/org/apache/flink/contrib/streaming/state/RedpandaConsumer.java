@@ -39,7 +39,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     String value_class_name;
 
     // For latency testing, keeping track of total latency over 100,000 records
-    Integer num_records = 10_000;
+    Integer num_records = 100_000;
     Integer curr_records = 0;
     Integer warmup = 5;
 
@@ -83,7 +83,10 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     private Consumer<K, V> createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, state.directory_daemon_address+":9192");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-1.3");
+        String tag = state.toString().substring(state.toString().lastIndexOf("@")+1);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "RPConsumer-"+tag);
+
+        System.out.println("Consumer name: " + "RPConsumer-"+tag);
 
         // performance configs
         props.put("session.timeout.ms", 30000);
@@ -92,8 +95,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // props.put("fetch.min.bytes", 100000000);
         props.put("max.poll.records", 250000);
 
-        props.put("fetch.max.bytes", 52428800);
-        props.put("max.partition.fetch.bytes", 52428800);
+        props.put("fetch.max.bytes", 524288000);
+        props.put("max.partition.fetch.bytes", 524288000);
 
         // Create the consumer using props.
         if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
@@ -174,15 +177,15 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
 
         if((curr_records % num_records == 0)){
-            if(warmup > 0){
-                System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
-                warmup -= 1;
-            }
-            else{
-                System.out.println("===LATENCY TESTING RESULTS===");
-            }
+            // if(warmup > 0){
+            //     System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
+            //     warmup -= 1;
+            // }
+            // else{
+            //     System.out.println("===LATENCY TESTING RESULTS===");
+            // }
 
-            System.out.printf("Average Latency (from Producer): %f\n\n", 
+            System.out.printf("[LATENCY]: %f\n\n", 
                 (float) total_latency_from_produced / curr_records);
   
             curr_records = 0;

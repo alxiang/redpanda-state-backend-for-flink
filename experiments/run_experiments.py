@@ -119,6 +119,13 @@ def run_experiment_trials(args, pods):
             # get the latency from kubernetes logs
             if(backend == "redpanda"):
                 latencies = get_latencies_from_pod_logs(pods, start_time)
+                result.append({
+                    "trial": i,
+                    "backend": backend, 
+                    "benchmark": benchmark,
+                    "redpanda_async": redpanda_async,
+                    "latencies": latencies
+                })
             
 
         json.dump(result, file, indent=4)
@@ -153,7 +160,23 @@ def get_latencies_from_pod_logs(pods, start_time):
         ], capture_output=True)
         logs.append(output.stdout.decode("utf-8"))
 
-    print(logs)
+    # print(logs)
+
+    res = []
+    for log in logs:
+        latencies = []
+        log_as_list = log.split("\n")
+        for x in log_as_list:
+            # print(x)
+            if(x.find("[LATENCY]") != -1):
+                # print(x.split(" "))
+                _, latency = x.split(" ")
+                latencies.append(float(latency))
+
+        if(len(latencies) > 0):
+            res.append(latencies)
+
+    return res
 
 
     
