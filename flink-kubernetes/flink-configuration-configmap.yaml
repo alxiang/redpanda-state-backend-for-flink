@@ -15,6 +15,7 @@ data:
     jobmanager.memory.process.size: 1600m
     taskmanager.memory.process.size: 3400m
     parallelism.default: 1    
+    classloader.resolve-order: parent-first
   log4j-console.properties: |+
     # This affects logging for both user code and Flink
     rootLogger.level = OFF

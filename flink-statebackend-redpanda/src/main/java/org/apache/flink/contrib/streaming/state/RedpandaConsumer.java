@@ -218,64 +218,65 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
-        try {
-            cl.loadClass("org.apache.kafka.common.message.OffsetForLeaderEpochRequestData$OffsetForLeaderTopicCollection");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$4");
-            cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartitionCollection");
-            cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartition");
-            cl.loadClass("org.apache.kafka.clients.NetworkClient$1");
-            cl.loadClass("org.apache.kafka.clients.FetchSessionHandler");
-            cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder");
-            cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$FetchRequestData");
+        // try {
+        //     cl.loadClass("org.apache.kafka.common.message.OffsetForLeaderEpochRequestData$OffsetForLeaderTopicCollection");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$4");
+        //     cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartitionCollection");
+        //     cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartition");
+        //     cl.loadClass("org.apache.kafka.clients.NetworkClient$1");
+        //     cl.loadClass("org.apache.kafka.clients.FetchSessionHandler");
+        //     cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$Builder");
+        //     cl.loadClass("org.apache.kafka.clients.FetchSessionHandler$FetchRequestData");
 
-            cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata");
-            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.OffsetAndMetadata");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupSubscription");
 
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$3");
-            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupAssignment");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractPartitionAssignor$MemberInfo");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.RequestFuture$2");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$3");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$GroupAssignment");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitCompletion");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractCoordinator$HeartbeatThread$1");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.AbstractPartitionAssignor$MemberInfo");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetData");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$ListOffsetResult");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$1");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$7");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$FetchResponseMetricAggregator$FetchMetrics");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.RequestFuture$2");
             
-            cl.loadClass("org.apache.kafka.common.requests.FetchMetadata");
-            cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData");
-            cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3");
-            cl.loadClass("org.apache.kafka.common.metrics.stats.Value");
-            cl.loadClass("org.apache.kafka.common.network.Selector$CloseMode");
-            cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment");
+        //     cl.loadClass("org.apache.kafka.common.requests.FetchMetadata");
+        //     cl.loadClass("org.apache.kafka.common.requests.FetchRequest$PartitionData");
+        //     cl.loadClass("org.apache.kafka.common.record.DefaultRecordBatch$3");
+        //     cl.loadClass("org.apache.kafka.common.metrics.stats.Value");
+        //     cl.loadClass("org.apache.kafka.common.network.Selector$CloseMode");
+        //     cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment");
 
-            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord");
-            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable");
-            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1");
-            cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2");
-            cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException");
-            cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$Assignment");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecord");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.ConsumerRecords$ConcatenatedIterable$1");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$2");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.RetriableCommitFailedException");
+        //     cl.loadClass("org.apache.kafka.clients.consumer.ConsumerPartitionAssignor$Assignment");
 
-            cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1");
-            cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState");
-            cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$SearchState");
-            cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$EntryPresence");
-            cl.loadClass("net.openhft.chronicle.hash.impl.stage.entry.ChecksumHashing");
+        //     cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$1");
+        //     cl.loadClass("net.openhft.chronicle.hash.impl.LocalLockState");
+        //     cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$SearchState");
+        //     cl.loadClass("net.openhft.chronicle.map.impl.CompiledMapQueryContext$EntryPresence");
+        //     cl.loadClass("net.openhft.chronicle.hash.impl.stage.entry.ChecksumHashing");
+        //     cl.loadClass("net.openhft.chronicle.hash.impl.VanillaChronicleHash$TierBulkData");
 
-        } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        // } catch (ClassNotFoundException e) {
+        //     // TODO Auto-generated catch block
+        //     e.printStackTrace();
+        // }
     }
     
     public void run() {
 
         while (true) {
             // System.out.println("[REDPANDACONSUMER] About to poll!");
-            final ConsumerRecords<K, V> consumerRecords = consumer.poll(10L);
+            final ConsumerRecords<K, V> consumerRecords = consumer.poll(5L);
             // System.out.println("[REDPANDACONSUMER] I am polling!");
             if (consumerRecords.count() != 0) {
 
