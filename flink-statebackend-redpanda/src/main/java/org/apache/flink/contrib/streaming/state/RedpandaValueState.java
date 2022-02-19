@@ -187,7 +187,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         
 
             try {
-                client.createFile(filePath, "local://tmp", hostAddress);
+                client.createFile(filePath, "file:///tmp", hostAddress);
             } catch (Exception e) {
                 System.out.println(e);
             }
@@ -215,9 +215,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // 1MB, 50ms linger gives good throughput
         if(BATCH_WRITES){
             System.out.println("Batching writes before sending them to Redpanda");
-            props.put("batch.size", 1024*1024);
-            props.put("buffer.size", 1024*1024);
-            props.put("linger.ms", 3);
+            props.put("batch.size", 1024*1024);//1024*1024);
+            // props.put("buffer.size", 1024*1024);
+            props.put("linger.ms", 10);
         }
 
         // for improving synchronous writing
