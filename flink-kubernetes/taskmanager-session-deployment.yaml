@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flink-taskmanager
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flink
@@ -14,6 +14,7 @@ spec:
         app: flink
         component: taskmanager
     spec:
+      hostIPC: true
       containers:
       - name: taskmanager
         image: alxiang/redpanda-worker:3.0 # apache/flink:1.13-scala_2.11-java11
@@ -40,8 +41,8 @@ spec:
           mountPath: /opt/flink/conf/
         - name: flink-input-data
           mountPath: /opt/flink/resources/
-        - name: chronicle-map-dir
-          mountPath: /tmp/BackendChronicleMaps/
+        #- name: chronicle-map-dir
+        #  mountPath: /tmp/BackendChronicleMaps/
         securityContext:
           privileged: true
           runAsUser: 0  # refers to user _flink_ from official flink image, change if necessary

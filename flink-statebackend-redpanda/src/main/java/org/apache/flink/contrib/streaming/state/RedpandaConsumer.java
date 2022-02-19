@@ -19,6 +19,7 @@ import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.util.SplittableRandom;
 
 public class RedpandaConsumer<K, V, N> extends Thread{
 
@@ -39,7 +40,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     String value_class_name;
 
     // For latency testing, keeping track of total latency over 100,000 records
-    Integer num_records = 10_000;
+    Double sample_rate = 0.05;
+    Integer num_records = (int) (10_000 * sample_rate);
     Integer curr_records = 0;
     Integer warmup = 5;
 
@@ -47,6 +49,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     Boolean latency_printed = false;
     String hostAddress;
+    SplittableRandom rand = new SplittableRandom();
 
     public RedpandaConsumer(
         RedpandaKeyedStateBackend<K> keyedBackend,
@@ -203,7 +206,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             
             this.makeUpdate(key, value);
 
-            latencyTesting(record);
+            if(rand.nextDouble() < sample_rate){
+                latencyTesting(record);
+            }
         }
         catch (Exception exception){
             System.out.println("Exception in processRecord(): " + exception);
@@ -284,16 +289,33 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             // System.out.println("[REDPANDACONSUMER] I am polling!");
             if (consumerRecords.count() != 0) {
 
-                System.out.println("Num consumer records " + consumerRecords.count());
-
+                //System.out.println("Num consumer records " + consumerRecords.count());
+                Long before_processing = System.currentTimeMillis();
                 consumerRecords.forEach(record -> processRecord(record));
+                Long after_processing = System.currentTimeMillis();
+                //System.out.println("Took [process]" + (after_processing-before_processing));
                 consumer.commitAsync();
+                //System.out.println("Took [commit] " + (System.currentTimeMillis()-after_processing));
+                // System.out.println("ChronicleMap size: "+ state.kvStore.size() +"\n");
+                // System.out.println("Off heap memory used: " + state.kvStore.offHeapMemoryUsed());
+
                 last_time_consumed = System.currentTimeMillis();
 
                 // System.out.println("Processed records");
             }
             else {
                 if(System.currentTimeMillis() - last_time_consumed > timeout){
+                    try{
+                        this.consumer.close();
+                        state.producer.close();
+                        state.kvStore.close();
+                       
+                    }
+                    catch (Exception e){
+                        //
+                        System.out.println(e);
+                    }
+                    
                     return;
                 }
                 //System.out.println(System.currentTimeMillis());

@@ -19,7 +19,8 @@ flink_path = "/home/alec/flink-1.13.2"
 #Mapping of a benchmark to its file name, edit whenever creating a new benchmark
 benchmark_map = {
     "JSON": "JSONBenchmark",
-    "Wiki": "WikiBenchmark"
+    "Wiki": "WikiBenchmark",
+    "Printing": "PrintingJobBenchmark"
 }
 
 def launch_flink_job(args, flink_path, root_path):
@@ -62,8 +63,8 @@ def run_experiment_trials(args):
         result = []
         for i in range(k):
             print(f"Starting Trial {i}")
-            # pods = reset_kube_cluster(args)
-            pods = get_kube_pods()
+            pods = reset_kube_cluster(args)
+            # pods = get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
             print(start_time)
 
@@ -228,13 +229,13 @@ def main():
     if args.backend != "all":
         run_experiment_trials(args)
     else:
-        args.backend = "redpanda"
-        args.redpanda_async = "true"
-        run_experiment_trials(args)
-
         # args.backend = "redpanda"
-        # args.redpanda_async = "false"
+        # args.redpanda_async = "true"
         # run_experiment_trials(args)
+
+        args.backend = "redpanda"
+        args.redpanda_async = "false"
+        run_experiment_trials(args)
 
         args.backend = "rocksdb"
         run_experiment_trials(args)

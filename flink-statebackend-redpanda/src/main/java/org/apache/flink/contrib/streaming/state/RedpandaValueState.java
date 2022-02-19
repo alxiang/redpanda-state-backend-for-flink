@@ -68,7 +68,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private static int numKeyedStatesBuilt = 0;
     private boolean chronicleMapInitialized = false;
 
-    private KafkaProducer<K, V> producer;    
+    KafkaProducer<K, V> producer;    
     public String key_class_name;
     public String value_class_name;
     //  if false, uses synchronous writes to Redpanda (lower latency and throughput)
@@ -215,7 +215,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // 1MB, 50ms linger gives good throughput
         if(BATCH_WRITES){
             System.out.println("Batching writes before sending them to Redpanda");
-            props.put("batch.size", 1024*1024);//1024*1024);
+            props.put("batch.size", 100*1024);//1024*1024);
             // props.put("buffer.size", 1024*1024);
             props.put("linger.ms", 10);
         }
