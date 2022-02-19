@@ -63,8 +63,8 @@ def run_experiment_trials(args):
         result = []
         for i in range(k):
             print(f"Starting Trial {i}")
-            pods = reset_kube_cluster(args)
-            # pods = get_kube_pods()
+            # pods = reset_kube_cluster(args)
+            pods = get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
             print(start_time)
 
@@ -169,7 +169,6 @@ def get_latencies_from_pod_logs(pods, start_time):
     for log in logs:
         latencies = []
         log_as_list = log.split("\n")
-        print(log_as_list)
         for x in log_as_list:
             print(x)
             if(x.find("[LATENCY]") != -1):

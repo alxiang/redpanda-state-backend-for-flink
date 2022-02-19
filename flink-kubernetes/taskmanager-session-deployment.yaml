@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flink-taskmanager
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: flink
@@ -41,8 +41,8 @@ spec:
           mountPath: /opt/flink/conf/
         - name: flink-input-data
           mountPath: /opt/flink/resources/
-        #- name: chronicle-map-dir
-        #  mountPath: /tmp/BackendChronicleMaps/
+        - name: dshm
+          mountPath: /tmp/BackendChronicleMaps/
         securityContext:
           privileged: true
           runAsUser: 0  # refers to user _flink_ from official flink image, change if necessary
@@ -67,6 +67,6 @@ spec:
       - name: flink-input-data
         hostPath:
           path: /home/alec/flink-1.13.2/redpanda-state-backend-for-flink/wikipedia/
-      - name: chronicle-map-dir
-        hostPath: 
-          path: /tmp/BackendChronicleMaps/
+      - name: dshm
+        emptyDir: 
+          medium: Memory
