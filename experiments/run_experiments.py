@@ -41,7 +41,7 @@ def launch_flink_job(args, flink_path, root_path):
         backend,
         redpanda_async, # whether to use redpanda async batching
         benchmark, # topic
-        "192.168.122.131" # master machine address
+        "192.168.122.132" # master machine address
     ], stdout=subprocess.PIPE)
    
     return proc

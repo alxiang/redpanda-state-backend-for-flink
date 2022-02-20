@@ -7,7 +7,7 @@ metadata:
 data:
   flink-conf.yaml: |+
     jobmanager.rpc.address: flink-jobmanager
-    taskmanager.numberOfTaskSlots: 20
+    taskmanager.numberOfTaskSlots: 3
     blob.server.port: 6124
     jobmanager.rpc.port: 6123
     taskmanager.rpc.port: 6122
