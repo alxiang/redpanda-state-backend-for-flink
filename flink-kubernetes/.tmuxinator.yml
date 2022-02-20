@@ -1,0 +1,15 @@
+name: flink-kubernetes
+root: ~/flink-1.13.2/redpanda-state-backend-for-flink/flink-kubernetes
+
+windows:
+  - kube_setup:
+      layout: tiled
+      panes:
+      - experiments-shell:
+        - cd ../experiments
+      - kube-launch:
+        - ./kube-teardown.sh; ./kube-startup.sh
+      - jiffy:
+        - cd ~/jiffy && directoryd
+      - redpanda:
+        - systemctl status redpanda
