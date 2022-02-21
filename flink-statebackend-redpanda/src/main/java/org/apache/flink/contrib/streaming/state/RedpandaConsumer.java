@@ -2,6 +2,8 @@ package org.apache.flink.contrib.streaming.state;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
+import org.apache.commons.io.FileUtils;
+import java.io.File;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.*;
@@ -224,6 +226,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
         try {
+            cl.loadClass("org.apache.kafka.clients.consumer.LogTruncationException");
+            cl.loadClass("org.apache.kafka.common.message.OffsetForLeaderEpochResponseData$OffsetForLeaderTopicResultCollection");
             cl.loadClass("org.apache.kafka.common.message.OffsetForLeaderEpochRequestData$OffsetForLeaderTopicCollection");
             cl.loadClass("org.apache.kafka.clients.consumer.internals.Fetcher$4");
             cl.loadClass("org.apache.kafka.common.message.ConsumerProtocolAssignment$TopicPartitionCollection");
@@ -309,6 +313,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                         this.consumer.close();
                         state.producer.close();
                         state.kvStore.close();
+                        
+
+                        FileUtils.cleanDirectory(new File("/tmp/BackendChronicleMaps")); 
                        
                     }
                     catch (Exception e){

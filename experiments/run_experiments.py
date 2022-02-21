@@ -64,7 +64,7 @@ def run_experiment_trials(args):
         for i in range(k):
             print(f"Starting Trial {i}")
             
-            if(backend == "redpanda" and redpanda_async == True):
+            if(backend == "redpanda" and redpanda_async == "true"):
                 time.sleep(5) # give time for the prev thread to timeout
             
 
