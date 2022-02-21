@@ -63,6 +63,11 @@ def run_experiment_trials(args):
         result = []
         for i in range(k):
             print(f"Starting Trial {i}")
+            
+            if(backend == "redpanda" and redpanda_async == True):
+                time.sleep(5) # give time for the prev thread to timeout
+            
+
             # pods = reset_kube_cluster(args)
             pods = get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
@@ -132,6 +137,7 @@ def run_experiment_trials(args):
             
 
         json.dump(result, file, indent=4)
+        file.flush()
 
 def get_kube_pods():
 
@@ -228,13 +234,13 @@ def main():
     if args.backend != "all":
         run_experiment_trials(args)
     else:
-        # args.backend = "redpanda"
-        # args.redpanda_async = "true"
-        # run_experiment_trials(args)
-
         args.backend = "redpanda"
-        args.redpanda_async = "false"
+        args.redpanda_async = "true"
         run_experiment_trials(args)
+
+        # args.backend = "redpanda"
+        # args.redpanda_async = "false"
+        # run_experiment_trials(args)
 
         args.backend = "rocksdb"
         run_experiment_trials(args)
