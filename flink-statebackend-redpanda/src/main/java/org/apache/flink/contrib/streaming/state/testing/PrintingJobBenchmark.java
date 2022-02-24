@@ -52,7 +52,7 @@ public class PrintingJobBenchmark {
 					.slotSharingGroup("src");
 
 		DataStream<Tuple2<String, Long>> mapper = source.keyBy(record -> record.f0)
-				.flatMap(new WordCountMap()) 
+				.flatMap(new WordCountMap("Printing", true, "192.168.122.131")) 
 				.slotSharingGroup("map");
 
 		mapper.addSink(new DiscardingSink<>())

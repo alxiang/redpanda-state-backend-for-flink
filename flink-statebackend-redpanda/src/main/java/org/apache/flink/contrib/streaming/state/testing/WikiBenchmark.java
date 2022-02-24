@@ -39,6 +39,7 @@ public class WikiBenchmark {
 		String TOPIC = "Wiki";
 		boolean async = false;
 		String directory_daemon_address = "127.0.0.1";
+		boolean redpanda = true;
 
 		if(args.length >= 2){
 			if(args[1].equals("true")){
@@ -51,14 +52,19 @@ public class WikiBenchmark {
 		if(args.length >= 4){
 			directory_daemon_address = args[3];
 		}	
+		if(args.length >= 5){
+			if(args[4].equals("false")){
+				redpanda = false;
+			}
+		}
 
 		// configure source
-        DataStreamSource<String> source = env.readTextFile("file:///Users/alecxiang/flink-1.13.2/wikipedia/wiki-100k.txt").setParallelism(5);
+        DataStreamSource<String> source = env.readTextFile("file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-1k.txt");
 
-        DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer()).setParallelism(5);
+        DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 
 		DataStream<Tuple2<String, Long>> mapper = tokenized.keyBy(record -> record.f0)
-				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address)) 
+				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address, redpanda)) 
 				.slotSharingGroup("map");
 
 		mapper.addSink(new DiscardingSink<>())

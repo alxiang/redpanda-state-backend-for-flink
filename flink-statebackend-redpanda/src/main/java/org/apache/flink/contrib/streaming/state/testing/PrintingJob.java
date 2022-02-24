@@ -40,7 +40,7 @@ public class PrintingJob {
 			new Tuple2<String, Long>("elderberry", 0L),
 			new Tuple2<String, Long>("apple", 0L)
 		).keyBy(record -> record.f0)
-        .flatMap(new WordCountMap()) // while reading the stream, employ ValueState which is updated by our backend
+        .flatMap(new WordCountMap("Printing", false, "192.168.122.131")) // while reading the stream, employ ValueState which is updated by our backend
         .print();
 
 		// execute program

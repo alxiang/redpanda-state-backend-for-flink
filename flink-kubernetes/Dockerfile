@@ -23,7 +23,7 @@ RUN apt-get install -y systemd
 
 # Clone Jiffy
 RUN apt install -y git
-RUN git clone git://github.com/alxiang/jiffy.git && cd jiffy && mkdir -p build && cd build
+RUN git clone -b cluster git://github.com/alxiang/jiffy.git && cd jiffy && mkdir -p build && cd build
 
 # Install Jiffy requirements
 # RUN snap install cmake --classic

@@ -73,6 +73,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public String value_class_name;
     //  if false, uses synchronous writes to Redpanda (lower latency and throughput)
     public boolean BATCH_WRITES = false;
+    // if false, writes directly to chroniclemap and doesn't write to redpanda (for testing)
+    public boolean USE_REDPANDA = true;
+
 
     public String TOPIC; // if not set, defaults to memory address of this object
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
@@ -125,14 +128,16 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.kvStore = createChronicleMap();
 
         // Create Redpanda producer
-        this.producer = this.createProducer();
+        if(USE_REDPANDA){
+            this.producer = this.createProducer();
 
-        // Startup the Redpanda Consumer as an async thread
-        this.thread = new RedpandaConsumer<>(this.backend, this);
-        this.thread.setName("RedpandaConsumer-thread");
-        this.thread.initialize();
-        this.thread.setPriority(10);
-        this.thread.start();
+            // Startup the Redpanda Consumer as an async thread
+            this.thread = new RedpandaConsumer<>(this.backend, this);
+            this.thread.setName("RedpandaConsumer-thread");
+            this.thread.initialize();
+            this.thread.setPriority(10);
+            this.thread.start();
+        }
     }
 
     private ChronicleMap<K, V> createChronicleMap() throws IOException {
@@ -344,10 +349,20 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             this.chronicleMapInitialized = true;
         }
 
-        try {
-            this.writeMessage(TOPIC, backend.getCurrentKey(), value);
-        } catch (java.lang.Exception e) {
-            throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
+        if(USE_REDPANDA){
+            try {
+                this.writeMessage(TOPIC, backend.getCurrentKey(), value);
+            } catch (java.lang.Exception e) {
+                throw new FlinkRuntimeException("Error while writing data to Redpanda/Kafka", e);
+            }
+        }
+        else{
+            try {
+                this.kvStore.put(backend.getCurrentKey(), value);
+            } 
+            catch (java.lang.Exception e) {
+                throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
+            }
         }
     }
 

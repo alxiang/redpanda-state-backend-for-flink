@@ -52,7 +52,7 @@ public class JSONBenchmark {
 		}	
 
 		// configure source
-        DataStreamSource<String> source = env.readTextFile("file:///Users/andrewmilas/dev/cpsc438/flink-1.13.2/redpanda-state-backend-for-flink/json-records/json-10k.txt").setParallelism(5);
+        DataStreamSource<String> source = env.readTextFile("file:///opt/flink/redpanda-state-backend-for-flink/json-records/json-10k.txt");
 
 		DataStream<String> mapper = source.keyBy(record -> record.substring(8, 44))
 				.flatMap(new JSONRecordMap(TOPIC, async, directory_daemon_address)) 

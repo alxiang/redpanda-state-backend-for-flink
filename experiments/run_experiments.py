@@ -1,13 +1,14 @@
 import pathlib
 import argparse
 import datetime
-from datetime import timezone
+from datetime import timezone, date
 import json
 import subprocess
 import sys
 import time
 import kubernetes.client
 from kubernetes import client, config
+import os
 
 root_path = "/home/alec/flink-1.13.2/redpanda-state-backend-for-flink"# pathlib.Path(__file__).parent.parent.absolute()
 print(root_path)
@@ -23,12 +24,15 @@ benchmark_map = {
     "Printing": "PrintingJobBenchmark"
 }
 
+today_folder = date.today().strftime("%m-%d-%Y")
+
 def launch_flink_job(args, flink_path, root_path):
 
     benchmark = args.benchmark
     backend = args.backend
     port = args.port
     redpanda_async = args.redpanda_async
+    use_redpanda = args.use_redpanda
 
     proc = subprocess.Popen([
         f"{flink_path}/bin/flink",
@@ -41,7 +45,8 @@ def launch_flink_job(args, flink_path, root_path):
         backend,
         redpanda_async, # whether to use redpanda async batching
         benchmark, # topic
-        "192.168.122.132" # master machine address
+        "192.168.122.132", # master machine address
+        use_redpanda # whether or not to back the backend with redpanda
     ], stdout=subprocess.PIPE)
    
     return proc
@@ -57,7 +62,7 @@ def run_experiment_trials(args):
     jobs = args.jobs
 
     current_time = datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-    file_name = f"{root_path}/experiments/{current_time}_{backend}_{benchmark}.json"
+    file_name = f"{root_path}/experiments/{today_folder}/{current_time}_{backend}_{benchmark}.json"
     print(f"[{current_time}]: Running experiment {backend} with {benchmark} benchmark")
     with open(file_name, mode='w+') as file:
         result = []
@@ -221,11 +226,18 @@ def main():
     parser.add_argument('backend')
     parser.add_argument('redpanda_async', type=str, default='true')
     parser.add_argument('jobs', type=int, default=1)
+    parser.add_argument('use_redpanda', type=str, default='true', nargs='?')
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()
 
     # pods = get_kube_pods()
     # print(pods)
+
+    # make a folder to save the experiments for today
+    try:
+        os.makedirs(today_folder, exist_ok=True)
+    except:
+        pass
 
     if args.benchmark not in benchmark_map:
         print("Can't find benchmark with name", args.benchmark)

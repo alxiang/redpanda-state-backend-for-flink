@@ -17,7 +17,7 @@ spec:
       hostIPC: true
       containers:
       - name: taskmanager
-        image: alxiang/redpanda-worker:3.0 # apache/flink:1.13-scala_2.11-java11
+        image: alxiang/redpanda-worker:4.0 # apache/flink:1.13-scala_2.11-java11
         resources:
           requests:
             memory: "12Gi"
