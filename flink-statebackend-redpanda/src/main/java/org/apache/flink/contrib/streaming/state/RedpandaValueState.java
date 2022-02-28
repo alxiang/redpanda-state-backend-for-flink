@@ -66,7 +66,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private static Logger log = Logger.getLogger("mmf value state");
     ChronicleMap<K, V> kvStore;
     private static int numKeyedStatesBuilt = 0;
-    private boolean chronicleMapInitialized = false;
+    boolean chronicleMapInitialized = false;
 
     KafkaProducer<K, V> producer;    
     public String key_class_name;
@@ -87,6 +87,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     // Jiffy integration
     JiffyClient client;
     public String directory_daemon_address;
+
+    // Snapshotting
+    Long last_sent;
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -192,7 +195,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         
 
             try {
-                client.createFile(filePath, "file:///tmp", hostAddress);
+                client.createFile(filePath, "local://tmp", hostAddress);
             } catch (Exception e) {
                 System.out.println(e);
             }
@@ -261,15 +264,35 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         final ProducerRecord<K, V> record;
 
+        this.last_sent = System.currentTimeMillis();
+
         // TODO - get this out of the hot path via Java's equivalent of templating
         if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
-            record = (ProducerRecord<K, V>) new ProducerRecord<String, String>(TOPIC, key.toString(), value.toString());
+            record = (ProducerRecord<K, V>) new ProducerRecord<String, String>(
+                TOPIC, 
+                null,
+                this.last_sent,
+                key.toString(), 
+                value.toString()
+            );
         }
         else if(key_class_name == "java.lang.String" && value_class_name == "java.lang.Long"){
-            record = (ProducerRecord<K, V>) new ProducerRecord<String, Long>(TOPIC, key.toString(), (Long) value);
+            record = (ProducerRecord<K, V>) new ProducerRecord<String, Long>(
+                TOPIC, 
+                null,
+                this.last_sent,
+                key.toString(), 
+                (Long) value
+            );
         }
         else if(key_class_name == "java.lang.Long" && value_class_name == "java.lang.Long"){
-            record = (ProducerRecord<K, V>) new ProducerRecord<Long, Long>(TOPIC, (Long) key, (Long) value);
+            record = (ProducerRecord<K, V>) new ProducerRecord<Long, Long>(
+                TOPIC, 
+                null,
+                this.last_sent,
+                (Long) key, 
+                (Long) value
+            );
         }
         else{
             String error_message = String.format("Type combination %s and %s not supported yet.", key_class_name, value_class_name);

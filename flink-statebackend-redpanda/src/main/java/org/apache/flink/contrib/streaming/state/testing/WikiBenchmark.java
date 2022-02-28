@@ -3,10 +3,14 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
+import org.apache.flink.streaming.api.functions.source.FileProcessingMode;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.java.io.TextInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 // State backends
 import org.apache.flink.contrib.streaming.state.RedpandaStateBackend;
+import org.apache.flink.core.fs.Path;
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
@@ -35,6 +39,8 @@ public class WikiBenchmark {
 			}
 		}
 
+		env.enableCheckpointing(10);
+
 		// command line options
 		String TOPIC = "Wiki";
 		boolean async = false;
@@ -58,8 +64,18 @@ public class WikiBenchmark {
 			}
 		}
 
+		String filePath = "file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-10k.txt";
+		TextInputFormat format = new TextInputFormat(new Path(filePath));
+        format.setCharsetName("UTF-8");
+
 		// configure source
-        DataStreamSource<String> source = env.readTextFile("file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-1k.txt");
+        DataStreamSource<String> source = env.readFile(
+			format,
+			filePath,
+			FileProcessingMode.PROCESS_CONTINUOUSLY,
+			60000l,
+			BasicTypeInfo.STRING_TYPE_INFO
+		);
 
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 

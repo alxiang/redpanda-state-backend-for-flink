@@ -1,5 +1,6 @@
 package org.apache.flink.contrib.streaming.state;
 
+import org.apache.flink.runtime.state.AsyncSnapshotCallable;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -13,6 +14,8 @@ import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.query.TaskKvStateRegistry;
 import org.apache.flink.runtime.state.AbstractKeyedStateBackend;
 import org.apache.flink.runtime.state.CheckpointStreamFactory;
+import org.apache.flink.runtime.state.CheckpointStreamWithResultProvider;
+import org.apache.flink.runtime.state.KeyGroupRangeOffsets;
 import org.apache.flink.runtime.state.KeyGroupedInternalPriorityQueue;
 import org.apache.flink.runtime.state.Keyed;
 import org.apache.flink.runtime.state.KeyedStateBackend;
@@ -46,6 +49,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import java.util.concurrent.FutureTask;
 
 /** An {@link AbstractKeyedStateBackend} that stores its state in a Memory Mapped File. */
 public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
@@ -259,8 +263,40 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
             final long timestamp,
             @Nonnull final CheckpointStreamFactory streamFactory,
             @Nonnull CheckpointOptions checkpointOptions)
-            throws Exception {
-        throw new NotImplementedException("TODO");
+            throws Exception 
+    {
+
+        RedpandaValueState s = (RedpandaValueState) stateNameToState.get("Word counter");
+        if (s.chronicleMapInitialized && s.last_sent != null) {
+            // s.thread.catch_up();
+            while(s.last_sent >= s.thread.latest_time){
+                System.out.println(s.last_sent + " " + s.thread.latest_time);
+                Thread.sleep(1);
+            }
+        }        
+
+        final AsyncSnapshotCallable<SnapshotResult<KeyedStateHandle>> asyncSnapshotCallable =
+			new AsyncSnapshotCallable<SnapshotResult<KeyedStateHandle>>() {
+				@Override
+				protected SnapshotResult<KeyedStateHandle> callInternal() throws Exception {
+
+					return SnapshotResult.empty();
+                    // return CheckpointStreamWithResultProvider.toKeyedStateHandleSnapshotResult(result, kgOffs);
+				}
+
+				@Override
+				protected void cleanupProvidedResources() {
+				}
+
+				@Override
+				protected void logAsyncSnapshotComplete(long startTime) {
+				}
+			};
+
+		final FutureTask<SnapshotResult<KeyedStateHandle>> task =
+			asyncSnapshotCallable.toAsyncSnapshotFutureTask(cancelStreamRegistry);
+
+		return task;
     }
 
     @Nonnull
@@ -312,12 +348,12 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
 
     @Override
     public void notifyCheckpointComplete(long completedCheckpointId) throws Exception {
-        throw new NotImplementedException("TODO");
+        // throw new NotImplementedException("TODO");
     }
 
     @Override
     public void notifyCheckpointAborted(long checkpointId) throws Exception {
-        throw new NotImplementedException("TODO");
+        // throw new NotImplementedException("TODO");
     }
 
     @VisibleForTesting

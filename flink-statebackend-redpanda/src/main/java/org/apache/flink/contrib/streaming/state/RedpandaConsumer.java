@@ -22,11 +22,12 @@ import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.SplittableRandom;
+import java.util.ConcurrentModificationException;
 
 public class RedpandaConsumer<K, V, N> extends Thread{
 
     private final RedpandaKeyedStateBackend<K> backend;
-    private Consumer<K, V> consumer;
+    public Consumer<K, V> consumer;
 
     static String TOPIC;
     private final static String BOOTSTRAP_SERVERS = "localhost:9192"; //"192.168.122.131:9192";
@@ -52,6 +53,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     Boolean latency_printed = false;
     String hostAddress;
     SplittableRandom rand = new SplittableRandom();
+
+    // for snapshotting
+    Long latest_time = 0L;
+    boolean in_control = true;
+    
 
     public RedpandaConsumer(
         RedpandaKeyedStateBackend<K> keyedBackend,
@@ -150,7 +156,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
 
-    private void latencyTesting(ConsumerRecord<K, V> record){
+    private void latencyTesting(ConsumerRecord<K, V> record, boolean verbose){
 
         Boolean flag = false;
 
@@ -177,11 +183,12 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
             total_latency_from_produced += (currentTime - record.timestamp());
             assert(currentTime - record.timestamp() > 0);
+            this.latest_time = record.timestamp();
             
             curr_records += 1;
         }
 
-        if((curr_records % num_records == 0)){
+        if((curr_records % num_records == 0) && verbose){
             // if(warmup > 0){
             //     System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
             //     warmup -= 1;
@@ -198,7 +205,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
 
-    private void processRecord(ConsumerRecord<K, V> record){
+    private void processRecord(ConsumerRecord<K, V> record, boolean verbose){
         // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
                 // record.partition(), record.offset());
 
@@ -207,10 +214,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             V value = record.value();
             
             this.makeUpdate(key, value);
+            //this.makeUpdate((K) "test", value);
 
-            if(rand.nextDouble() < sample_rate){
-                latencyTesting(record);
-            }
+            // if(rand.nextDouble() < sample_rate){
+            latencyTesting(record, verbose);
+            // }
         }
         catch (Exception exception){
             System.out.println("Exception in processRecord(): " + exception);
@@ -280,6 +288,37 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             e.printStackTrace();
         }
     }
+
+    // catch up to the target time
+    public void catch_up(){
+        Long poll_freq = 10L;
+
+        System.out.println("CATCHING UP");
+        this.in_control = false;
+
+        while (true) {
+            System.out.println(state.last_sent + " " + this.latest_time);
+            try{
+                final ConsumerRecords<K, V> consumerRecords = consumer.poll(poll_freq);
+                if (consumerRecords.count() != 0) {
+                    System.out.println("Num consumer records " + consumerRecords.count());
+                    consumerRecords.forEach(record -> processRecord(record, false));
+                    consumer.commitAsync();
+                    System.out.println("Processed records");
+                }
+                else {
+                    if(this.latest_time >= state.last_sent){
+                        System.out.println("DONE CATCHING UP");
+                        this.in_control = true;
+                        return;
+                    }
+                }
+            }
+            catch (ConcurrentModificationException e){
+                System.out.println("TODO[catch_up]: Beware concurrency...");
+            }
+        }
+    }
     
     public void run() {
 
@@ -288,44 +327,53 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         Long poll_freq = 10L;
 
         while (true) {
-            // System.out.println("[REDPANDACONSUMER] About to poll!");
-            final ConsumerRecords<K, V> consumerRecords = consumer.poll(poll_freq);
-            // System.out.println("[REDPANDACONSUMER] I am polling!");
-            if (consumerRecords.count() != 0) {
+            while(in_control){
+                try{
+                    // System.out.println("[REDPANDACONSUMER] About to poll!");
+                    final ConsumerRecords<K, V> consumerRecords = consumer.poll(poll_freq);
+                    // System.out.println("[REDPANDACONSUMER] I am polling!");
+                    if (consumerRecords.count() != 0) {
 
-                //System.out.println("Num consumer records " + consumerRecords.count());
-                Long before_processing = System.currentTimeMillis();
-                consumerRecords.forEach(record -> processRecord(record));
-                Long after_processing = System.currentTimeMillis();
-                //System.out.println("Took [process]" + (after_processing-before_processing));
-                consumer.commitAsync();
-                //System.out.println("Took [commit] " + (System.currentTimeMillis()-after_processing));
-                // System.out.println("ChronicleMap size: "+ state.kvStore.size() +"\n");
-                // System.out.println("Off heap memory used: " + state.kvStore.offHeapMemoryUsed());
+                        // System.out.println("Num consumer records " + consumerRecords.count());
+                        Long before_processing = System.currentTimeMillis();
+                        consumerRecords.forEach(record -> processRecord(record, true));
+                        Long after_processing = System.currentTimeMillis();
+                        // System.out.println("Took [process]" + (after_processing-before_processing));
+                        Long ms = after_processing-before_processing+1;
+                        // System.out.println("put/ns: " + ((float)consumerRecords.count())/ms/1000 + " ("+ms+" ms), (n=" +consumerRecords.count()+")");
+                        consumer.commitAsync();
+                        //System.out.println("Took [commit] " + (System.currentTimeMillis()-after_processing));
+                        // System.out.println("ChronicleMap size: "+ state.kvStore.size() +"\n");
+                        // System.out.println("Off heap memory used: " + state.kvStore.offHeapMemoryUsed());
 
-                last_time_consumed = System.currentTimeMillis();
+                        last_time_consumed = System.currentTimeMillis();
 
-                // System.out.println("Processed records");
-            }
-            else {
-                if(System.currentTimeMillis() - last_time_consumed > timeout){
-                    try{
-                        this.consumer.close();
-                        state.producer.close();
-                        state.kvStore.close();
-                        
-
-                        FileUtils.cleanDirectory(new File("/tmp/BackendChronicleMaps")); 
-                       
+                        // System.out.println("Processed records");
                     }
-                    catch (Exception e){
-                        //
-                        System.out.println(e);
+                    else {
+                        if(System.currentTimeMillis() - last_time_consumed > timeout){
+                            try{
+                                this.consumer.close();
+                                state.producer.close();
+                                state.kvStore.close();
+                                
+
+                                FileUtils.cleanDirectory(new File("/tmp/BackendChronicleMaps")); 
+                            
+                            }
+                            catch (Exception e){
+                                //
+                                System.out.println(e);
+                            }
+                            
+                            return;
+                        }
+                        //System.out.println(System.currentTimeMillis());
                     }
-                    
-                    return;
                 }
-                //System.out.println(System.currentTimeMillis());
+                catch (ConcurrentModificationException e){
+                    System.out.println("TODO[run]: Beware concurrency...");
+                }
             }
         }
     }
