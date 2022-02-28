@@ -40,6 +40,7 @@ public class WikiBenchmark {
 		}
 
 		env.enableCheckpointing(10);
+		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(10);
 
 		// command line options
 		String TOPIC = "Wiki";

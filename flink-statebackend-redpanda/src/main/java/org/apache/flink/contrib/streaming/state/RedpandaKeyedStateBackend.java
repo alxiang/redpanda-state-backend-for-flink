@@ -269,7 +269,7 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         RedpandaValueState s = (RedpandaValueState) stateNameToState.get("Word counter");
         if (s.chronicleMapInitialized && s.last_sent != null) {
             // s.thread.catch_up();
-            while(s.last_sent >= s.thread.latest_time){
+            while(s.last_sent > s.thread.latest_time){
                 System.out.println(s.last_sent + " " + s.thread.latest_time);
                 Thread.sleep(1);
             }
