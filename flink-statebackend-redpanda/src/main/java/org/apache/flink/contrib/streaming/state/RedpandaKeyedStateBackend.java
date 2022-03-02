@@ -269,10 +269,15 @@ public class RedpandaKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
         RedpandaValueState s = (RedpandaValueState) stateNameToState.get("Word counter");
         if (s.chronicleMapInitialized && s.last_sent != null) {
             // s.thread.catch_up();
+            // s.thread.in_control = false;
             while(s.last_sent > s.thread.latest_time){
-                System.out.println(s.last_sent + " " + s.thread.latest_time);
                 Thread.sleep(1);
             }
+            System.out.println("[KEYED]: " + s.last_sent + " " + s.thread.latest_time);
+            System.out.println("[KEYED]: " + s.num_sent + " " + s.thread.num_consumed + "\n");
+            // s.thread.in_control = true;
+            s.thread.curr_records = 0;
+            s.thread.total_latency_from_produced = 0L;
         }        
 
         final AsyncSnapshotCallable<SnapshotResult<KeyedStateHandle>> asyncSnapshotCallable =

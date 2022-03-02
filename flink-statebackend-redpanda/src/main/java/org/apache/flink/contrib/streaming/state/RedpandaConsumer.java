@@ -56,8 +56,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
     // for snapshotting
     Long latest_time = 0L;
-    boolean in_control = true;
-    
+    Long num_consumed = 0L;
+    boolean in_control = true;    
 
     public RedpandaConsumer(
         RedpandaKeyedStateBackend<K> keyedBackend,
@@ -156,7 +156,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
 
-    private void latencyTesting(ConsumerRecord<K, V> record, boolean verbose){
+    private void latencyTesting(ConsumerRecord<K, V> record){
 
         Boolean flag = false;
 
@@ -177,18 +177,22 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             return;
         }
 
+        // System.out.println(record);
+
+        assert(this.latest_time <= record.timestamp());
+        this.latest_time = record.timestamp();
+        this.num_consumed += 1;
+
         // Latency testing: after this point, the new value is available in the user-code
         if(curr_records < num_records){
             long currentTime = System.currentTimeMillis();
 
             total_latency_from_produced += (currentTime - record.timestamp());
             assert(currentTime - record.timestamp() > 0);
-            this.latest_time = record.timestamp();
-            
             curr_records += 1;
         }
 
-        if((curr_records % num_records == 0) && verbose){
+        if((curr_records % num_records == 0) && in_control){
             // if(warmup > 0){
             //     System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
             //     warmup -= 1;
@@ -205,7 +209,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         }
     }
 
-    private void processRecord(ConsumerRecord<K, V> record, boolean verbose){
+    private void processRecord(ConsumerRecord<K, V> record){
         // System.out.printf("Processing Consumer Record:(%s, %s, %d, %d)\n", record.key(), record.value(),
                 // record.partition(), record.offset());
 
@@ -217,7 +221,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
             //this.makeUpdate((K) "test", value);
 
             // if(rand.nextDouble() < sample_rate){
-            latencyTesting(record, verbose);
+            latencyTesting(record);
             // }
         }
         catch (Exception exception){
@@ -302,7 +306,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                 final ConsumerRecords<K, V> consumerRecords = consumer.poll(poll_freq);
                 if (consumerRecords.count() != 0) {
                     System.out.println("Num consumer records " + consumerRecords.count());
-                    consumerRecords.forEach(record -> processRecord(record, false));
+                    consumerRecords.forEach(record -> processRecord(record));
                     consumer.commitAsync();
                     System.out.println("Processed records");
                 }
@@ -336,11 +340,11 @@ public class RedpandaConsumer<K, V, N> extends Thread{
 
                         // System.out.println("Num consumer records " + consumerRecords.count());
                         Long before_processing = System.currentTimeMillis();
-                        consumerRecords.forEach(record -> processRecord(record, true));
+                        consumerRecords.forEach(record -> processRecord(record));
                         Long after_processing = System.currentTimeMillis();
-                        // System.out.println("Took [process]" + (after_processing-before_processing));
+                        System.out.println("Took [process]" + (after_processing-before_processing));
                         Long ms = after_processing-before_processing+1;
-                        // System.out.println("put/ns: " + ((float)consumerRecords.count())/ms/1000 + " ("+ms+" ms), (n=" +consumerRecords.count()+")");
+                        System.out.println("put/ns: " + ((float)consumerRecords.count())/ms/1000 + " ("+ms+" ms), (n=" +consumerRecords.count()+")");
                         consumer.commitAsync();
                         //System.out.println("Took [commit] " + (System.currentTimeMillis()-after_processing));
                         // System.out.println("ChronicleMap size: "+ state.kvStore.size() +"\n");

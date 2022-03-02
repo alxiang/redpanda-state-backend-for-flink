@@ -90,6 +90,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     // Snapshotting
     Long last_sent;
+    Long num_sent = 0L;
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -159,7 +160,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         if (backend.getCurrentKey() instanceof Integer || backend.getCurrentKey() instanceof Long) {
             log.info("Key is an Int or Long");
         } else {
-            cmapBuilder.averageKeySize(64);
+            cmapBuilder.averageKeySize(6); // average english word size
         }
 
         if (valueSerializer.createInstance() instanceof Integer
@@ -223,9 +224,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // 1MB, 50ms linger gives good throughput
         if(BATCH_WRITES){
             System.out.println("Batching writes before sending them to Redpanda");
-            props.put("batch.size", 100*1024);//1024*1024);
+            props.put("batch.size",100*1024);//100*1024);//1024*1024);
             // props.put("buffer.size", 1024*1024);
-            props.put("linger.ms", 10);
+            props.put("linger.ms", 1);
         }
 
         // for improving synchronous writing
@@ -265,6 +266,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         final ProducerRecord<K, V> record;
 
         this.last_sent = System.currentTimeMillis();
+        this.num_sent += 1;
 
         // TODO - get this out of the hot path via Java's equivalent of templating
         if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
