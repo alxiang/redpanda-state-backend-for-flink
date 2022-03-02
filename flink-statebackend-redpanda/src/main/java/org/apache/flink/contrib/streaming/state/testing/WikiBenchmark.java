@@ -39,8 +39,8 @@ public class WikiBenchmark {
 			}
 		}
 
-		env.enableCheckpointing(10);
-		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(10);
+		// env.enableCheckpointing(10);
+		// env.getCheckpointConfig().setMinPauseBetweenCheckpoints(3);
 
 		// command line options
 		String TOPIC = "Wiki";
@@ -66,17 +66,18 @@ public class WikiBenchmark {
 		}
 
 		String filePath = "file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-10k.txt";
-		TextInputFormat format = new TextInputFormat(new Path(filePath));
-        format.setCharsetName("UTF-8");
+		// TextInputFormat format = new TextInputFormat(new Path(filePath));
+        // format.setCharsetName("UTF-8");
 
-		// configure source
-        DataStreamSource<String> source = env.readFile(
-			format,
-			filePath,
-			FileProcessingMode.PROCESS_CONTINUOUSLY,
-			60000l,
-			BasicTypeInfo.STRING_TYPE_INFO
-		);
+		// // configure source
+        // DataStreamSource<String> source = env.readFile(
+		// 	format,
+		// 	filePath,
+		// 	FileProcessingMode.PROCESS_CONTINUOUSLY,
+		// 	60000l,
+		// 	BasicTypeInfo.STRING_TYPE_INFO
+		// );
+		DataStreamSource<String> source = env.readTextFile(filePath);
 
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 

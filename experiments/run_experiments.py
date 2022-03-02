@@ -96,6 +96,7 @@ def run_experiment_trials(args):
             for t in range(jobs):
                 print(f"Submitting Job {t}")
                 procs.append(launch_flink_job(args, flink_path, root_path))
+                time.sleep(1) # slightly stagger job submission so no slot errors
 
             for t, proc in enumerate(procs):
                 while proc.poll() is None:
@@ -176,21 +177,27 @@ def get_latencies_from_pod_logs(pods, start_time):
 
     # print(logs)
 
-    res = []
+    res1 = []
+    res2 = []
     for log in logs:
         latencies = []
+        stdevs = []
         log_as_list = log.split("\n")
         for x in log_as_list:
             print(x)
             if(x.find("[LATENCY]") != -1):
-                # print(x.split(" "))
                 _, latency = x.split(" ")
                 latencies.append(float(latency))
+            if(x.find("[LATENCY_STDEV]") != -1):
+                _, stdev = x.split(" ")
+                stdevs.append(float(stdev))
 
         if(len(latencies) > 0):
-            res.append(latencies)
+            res1.append(latencies)
+        if(len(stdevs) > 0):
+            res2.append(stdevs)
 
-    return res
+    return res1, res2
 
 def reset_kube_cluster(args):
     print("Reseting the kube cluster")

@@ -6,6 +6,9 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.util.Properties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.header.Header;
@@ -43,8 +46,8 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     String value_class_name;
 
     // For latency testing, keeping track of total latency over 100,000 records
-    Double sample_rate = 0.05;
-    Integer num_records = (int) (10_000 * sample_rate);
+    Double sample_rate = 0.05;;
+    Integer num_records = (int) (10_000);
     Integer curr_records = 0;
     Integer warmup = 5;
 
@@ -53,6 +56,7 @@ public class RedpandaConsumer<K, V, N> extends Thread{
     Boolean latency_printed = false;
     String hostAddress;
     SplittableRandom rand = new SplittableRandom();
+    List<Long> latencies = new ArrayList<>();
 
     // for snapshotting
     Long latest_time = 0L;
@@ -186,26 +190,32 @@ public class RedpandaConsumer<K, V, N> extends Thread{
         // Latency testing: after this point, the new value is available in the user-code
         if(curr_records < num_records){
             long currentTime = System.currentTimeMillis();
+            Long delta = currentTime - record.timestamp();
 
-            total_latency_from_produced += (currentTime - record.timestamp());
-            assert(currentTime - record.timestamp() > 0);
+            total_latency_from_produced += delta;
+            assert(delta > 0);
             curr_records += 1;
+
+            latencies.add(delta);
         }
 
         if((curr_records % num_records == 0) && in_control){
-            // if(warmup > 0){
-            //     System.out.println("===LATENCY TESTING RESULTS [WARMUP]===");
-            //     warmup -= 1;
-            // }
-            // else{
-            //     System.out.println("===LATENCY TESTING RESULTS===");
-            // }
 
-            System.out.printf("[LATENCY]: %f\n\n", 
-                (float) total_latency_from_produced / curr_records);
+            float mean = (float) total_latency_from_produced / curr_records;
+
+            System.out.printf("[LATENCY]: %f\n", mean);
+
+            float deviation = 0;
+            for (Long latency : latencies) {
+                deviation += Math.pow((latency-mean), 2);
+            }
+            double stdev = Math.sqrt(deviation/(curr_records-1));
+
+            System.out.printf("[LATENCY_STDEV]: %f\n\n", stdev);
   
             curr_records = 0;
             total_latency_from_produced = 0L;
+            latencies.clear();
         }
     }
 
@@ -342,9 +352,9 @@ public class RedpandaConsumer<K, V, N> extends Thread{
                         Long before_processing = System.currentTimeMillis();
                         consumerRecords.forEach(record -> processRecord(record));
                         Long after_processing = System.currentTimeMillis();
-                        System.out.println("Took [process]" + (after_processing-before_processing));
+                        // System.out.println("Took [process]" + (after_processing-before_processing));
                         Long ms = after_processing-before_processing+1;
-                        System.out.println("put/ns: " + ((float)consumerRecords.count())/ms/1000 + " ("+ms+" ms), (n=" +consumerRecords.count()+")");
+                        // System.out.println("put/ns: " + ((float)consumerRecords.count())/ms/1000 + " ("+ms+" ms), (n=" +consumerRecords.count()+")");
                         consumer.commitAsync();
                         //System.out.println("Took [commit] " + (System.currentTimeMillis()-after_processing));
                         // System.out.println("ChronicleMap size: "+ state.kvStore.size() +"\n");

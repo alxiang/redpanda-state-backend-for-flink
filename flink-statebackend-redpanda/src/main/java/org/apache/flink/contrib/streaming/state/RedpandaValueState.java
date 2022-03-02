@@ -91,6 +91,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     // Snapshotting
     Long last_sent;
     Long num_sent = 0L;
+    Long checkpointing_interval = 1L; // time between checkpoints
+    Long last_checkpoint = 0L;
+
 
     /**
      * Creates a new {@code RedpandaValueState}.
@@ -224,7 +227,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // 1MB, 50ms linger gives good throughput
         if(BATCH_WRITES){
             System.out.println("Batching writes before sending them to Redpanda");
-            props.put("batch.size",100*1024);//100*1024);//1024*1024);
+            props.put("batch.size",1024);//100*1024);//1024*1024);
             // props.put("buffer.size", 1024*1024);
             props.put("linger.ms", 1);
         }
@@ -262,6 +265,16 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
     private boolean writeMessage(String TOPIC, K key, V value) {
+
+        // Checkpoint every so often if async mode,
+        // reducing producer throughput but increasing data freshness
+        if(BATCH_WRITES && System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
+            try {
+                checkpoint();
+            } catch (Exception e) {
+                //TODO: handle exception
+            }
+        }
 
         final ProducerRecord<K, V> record;
 
@@ -319,6 +332,24 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return true;
     }
 
+    public void checkpoint() throws InterruptedException{
+        // System.out.println("in checkpoint");
+        if (chronicleMapInitialized && last_sent != null && num_sent  > 1000) {
+            // s.thread.catch_up();
+            // s.thread.in_control = false;
+            while(last_sent > thread.latest_time){
+                // System.out.println("[CHECKPOINT]: " + last_sent + " " + thread.latest_time);
+                // System.out.println("[CHECKPOINT]: " + num_sent + " " + thread.num_consumed + "\n");
+                Thread.sleep(1);
+            }
+           
+            // s.thread.in_control = true;
+            // s.thread.curr_records = 0;
+            // s.thread.total_latency_from_produced = 0L;
+        }    
+        this.last_checkpoint = System.currentTimeMillis();
+    }
+    
     @Override
     public TypeSerializer<K> getKeySerializer() {
         return backend.getKeySerializer();
