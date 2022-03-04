@@ -91,7 +91,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     // Snapshotting
     Long last_sent;
     Long num_sent = 0L;
-    Long checkpointing_interval = 1L; // time between checkpoints
+    Long checkpointing_interval = 20L; // time between checkpoints
     Long last_checkpoint = 0L;
 
 
@@ -133,11 +133,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Setup ChronicleMap
         this.kvStore = createChronicleMap();
-
         // Create Redpanda producer
-        if(USE_REDPANDA){
-            this.producer = this.createProducer();
+        this.producer = this.createProducer();
 
+        // Set up a consumer if we also want to read from Redpanda
+        if(USE_REDPANDA){
+        
             // Startup the Redpanda Consumer as an async thread
             this.thread = new RedpandaConsumer<>(this.backend, this);
             this.thread.setName("RedpandaConsumer-thread");
@@ -227,9 +228,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // 1MB, 50ms linger gives good throughput
         if(BATCH_WRITES){
             System.out.println("Batching writes before sending them to Redpanda");
-            props.put("batch.size",1024);//100*1024);//1024*1024);
+            props.put("batch.size", 1024*1024);//100*1024);//1024*1024);
             // props.put("buffer.size", 1024*1024);
-            props.put("linger.ms", 1);
+            props.put("linger.ms", 10);
         }
 
         // for improving synchronous writing
@@ -268,13 +269,13 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Checkpoint every so often if async mode,
         // reducing producer throughput but increasing data freshness
-        if(BATCH_WRITES && System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
-            try {
-                checkpoint();
-            } catch (Exception e) {
-                //TODO: handle exception
-            }
-        }
+        // if(BATCH_WRITES && System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
+        //     try {
+        //         checkpoint();
+        //     } catch (Exception e) {
+        //         //TODO: handle exception
+        //     }
+        // }
 
         final ProducerRecord<K, V> record;
 
@@ -405,20 +406,19 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
             this.chronicleMapInitialized = true;
         }
 
-        if(USE_REDPANDA){
-            try {
-                this.writeMessage(TOPIC, backend.getCurrentKey(), value);
-            } catch (java.lang.Exception e) {
-                throw new FlinkRuntimeException("Error while writing data to Redpanda/Kafka", e);
-            }
+        // Always write to local ChronicleMap first
+        try {
+            this.kvStore.put(backend.getCurrentKey(), value);
+        } 
+        catch (java.lang.Exception e) {
+            throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
         }
-        else{
-            try {
-                this.kvStore.put(backend.getCurrentKey(), value);
-            } 
-            catch (java.lang.Exception e) {
-                throw new FlinkRuntimeException("Error while adding data to Memory Mapped File", e);
-            }
+
+        // Write asynchronously to Redpanda
+        try {
+            this.writeMessage(TOPIC, backend.getCurrentKey(), value);
+        } catch (java.lang.Exception e) {
+            throw new FlinkRuntimeException("Error while writing data to Redpanda/Kafka", e);
         }
     }
 
