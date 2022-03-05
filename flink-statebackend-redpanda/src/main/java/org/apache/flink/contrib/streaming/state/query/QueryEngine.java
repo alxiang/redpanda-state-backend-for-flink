@@ -14,7 +14,18 @@ import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
-// Deephaven imports
+// QuestDB imports
+import io.questdb.cairo.CairoConfiguration;
+import io.questdb.cairo.CairoEngine;
+import io.questdb.cairo.DefaultCairoConfiguration;
+import io.questdb.cairo.TableWriter;
+import io.questdb.cairo.sql.PageFrame;
+import io.questdb.cairo.sql.PageFrameCursor;
+import io.questdb.griffin.SqlCompiler;
+import io.questdb.griffin.SqlException;
+import io.questdb.griffin.SqlExecutionContextImpl;
+import io.questdb.std.Os;
+
 import java.net.UnknownHostException;
 import java.util.Collections;
 import org.apache.commons.io.FileUtils;
@@ -93,34 +104,31 @@ public class QueryEngine {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SqlException {
         QueryEngine myEngine = new QueryEngine("192.168.122.132");
 
-        final CairoConfiguration configuration = new DefaultCairoConfiguration("data_dir");
-        try (CairoEngine engine = new CairoEngine(configuration)) {
+        final CairoConfiguration configuration = new DefaultCairoConfiguration("/tmp/questdb");
+        // CairoEngine is a resource manager for embedded QuestDB
+        try (CairoEngine engine = new CairoEngine(configuration)) { 
+            // Execution context is a conduit for passing SQL execution artefacts to the execution site
             final SqlExecutionContextImpl ctx = new SqlExecutionContextImpl(engine, 1);
             try (SqlCompiler compiler = new SqlCompiler(engine)) {
 
-                PageFrameCursor cursor = ...; // Setup PageFrameCursor instance
-                compiler.compile("create table abc (a int, b byte, c short, d long, e float, g double, h date, i symbol, j string, k boolean, l geohash(8c), ts timestamp) timestamp(ts)", ctx);
+                // PageFrameCursor cursor = ...; // Setup PageFrameCursor instance
+                // An easy way to create the table
+                compiler.compile("create table abc (word string, count long, ts timestamp) timestamp(ts)", ctx);
 
+                // This TableWriter instance has an exclusive (intra and interprocess) lock on the table
                 try (TableWriter writer = engine.getWriter(ctx.getCairoSecurityContext(), "abc", "testing")) {
-                    int columnCount = writer.getMetadata().getColumnCount();
-                    TableBlockWriter blockWriter = writer.newBlock();
-
-                    PageFrame frame;
-                    while ((frame = cursor.next()) != null) {
-                        for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
-                            blockWriter.appendPageFrameColumn(
-                                    columnIndex,
-                                    frame.getPageSize(columnIndex),
-                                    frame.getPageAddress(columnIndex));
-                        }
+                    for (int i = 0; i < 11; i++){
+                        TableWriter.Row row = writer.newRow();//Os.currentTimeMicros());
+                        row.putStr(0, "hello");
+                        row.putLong(1, i);
+                        row.append();
                     }
-                    blockWriter.commit();
+                    writer.commit();
                 }
             }
         }
-
     }
 }

@@ -137,37 +137,6 @@ under the License.
 			<version>6.2.1</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/io.deephaven/deephaven-Base -->
-		<!-- <dependency> -->
-			<!-- <groupId>io.deephaven</groupId>
-			<artifactId>deephaven-Base</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.deephaven</groupId>
-			<artifactId>deephaven-Util</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.deephaven</groupId>
-			<artifactId>deephaven-engine-table</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.deephaven</groupId>
-			<artifactId>deephaven-IO</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.deephaven</groupId>
-			<artifactId>deephaven-extensions-parquet-table</artifactId>
-			<version>0.10.0</version>
-		</dependency> -->
-
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-runtime_${scala.binary.version}</artifactId>
