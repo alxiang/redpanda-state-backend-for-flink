@@ -66,7 +66,8 @@ public class QueryEngine {
     private void createConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, directory_daemon_address+":9192");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "QuestDBConsumer");
+        String tag = this.toString().substring(this.toString().lastIndexOf("@")+1);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "QuestDBConsumer-"+tag);
 
         // performance configs (borrowed from RedpandaConsumer)
         props.put("session.timeout.ms", 30000);
@@ -75,6 +76,7 @@ public class QueryEngine {
         props.put("max.poll.records", 250000);
         props.put("fetch.max.bytes", 52428800);
         props.put("max.partition.fetch.bytes", 52428800);
+        props.put("auto.offset.reset", "earliest");
 
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                                     StringDeserializer.class.getName());
@@ -102,7 +104,7 @@ public class QueryEngine {
             System.out.println("Got the local host address as: " + hostAddress);
             System.out.println("Asking for Jiffy file at: " + filePath);
 
-            client.createFile(filePath, "local://usr", hostAddress);
+            client.createFile(filePath, "local://home", hostAddress);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -120,7 +122,6 @@ public class QueryEngine {
 
     public static void main(String[] args) throws SqlException {
 
-        Long last_time_consumed = System.currentTimeMillis();
         Long timeout = 5000L;
         Long poll_freq = 10L;
 
@@ -146,10 +147,15 @@ public class QueryEngine {
 
                 // This TableWriter instance has an exclusive (intra and interprocess) lock on the table
                 try (TableWriter writer = engine.getWriter(ctx.getCairoSecurityContext(), table_name, "testing")) {
+                    
+                    System.out.println("Ready to consume from Redpanda");
+                    Long last_time_consumed = System.currentTimeMillis();
                     while (true) {
 
                         final ConsumerRecords<String, Long> consumerRecords = redpanda_engine.consumer.poll(poll_freq);
+                        System.out.println("Received records: " + consumerRecords.count());
                         if (consumerRecords.count() != 0) {
+                            
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
                             writer.commit();
                             redpanda_engine.consumer.commitAsync();
@@ -157,6 +163,7 @@ public class QueryEngine {
                         }
                         else {
                             if(System.currentTimeMillis() - last_time_consumed > timeout){
+                                System.out.println("Timing out and exiting gracefully");
                                 try{
                                     redpanda_engine.consumer.close();                                
                                 }
