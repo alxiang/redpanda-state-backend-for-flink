@@ -108,9 +108,24 @@ public class QueryEngine {
         }
     }
 
+    private void processRecord(ConsumerRecord<String, Long> record, TableWriter writer) {
+        String key = record.key();
+        Long value = record.value();
+
+        TableWriter.Row row = writer.newRow(record.timestamp());
+        row.putStr(0, key);
+        row.putLong(1, value);
+        row.append();
+    }
+
     public static void main(String[] args) throws SqlException {
+
+        Long last_time_consumed = System.currentTimeMillis();
+        Long timeout = 5000L;
+        Long poll_freq = 10L;
+
         String table_name = "wikitable";
-        QueryEngine myEngine = new QueryEngine(table_name, "192.168.122.132");
+        QueryEngine redpanda_engine = new QueryEngine(table_name, "192.168.122.132");
 
         final CairoConfiguration configuration = new DefaultCairoConfiguration("/home/alec/.questdb");
         // CairoEngine is a resource manager for embedded QuestDB
@@ -119,7 +134,6 @@ public class QueryEngine {
             final SqlExecutionContextImpl ctx = new SqlExecutionContextImpl(engine, 1);
             try (SqlCompiler compiler = new SqlCompiler(engine)) {
 
-                // PageFrameCursor cursor = ...; // Setup PageFrameCursor instance
                 // drop the table if it exists
                 try {
                     compiler.compile("drop table "+table_name, ctx);
@@ -132,13 +146,27 @@ public class QueryEngine {
 
                 // This TableWriter instance has an exclusive (intra and interprocess) lock on the table
                 try (TableWriter writer = engine.getWriter(ctx.getCairoSecurityContext(), table_name, "testing")) {
-                    for (int i = 0; i < 11; i++){
-                        TableWriter.Row row = writer.newRow();//Os.currentTimeMicros());
-                        row.putStr(0, "hello");
-                        row.putLong(1, i);
-                        row.append();
+                    while (true) {
+
+                        final ConsumerRecords<String, Long> consumerRecords = redpanda_engine.consumer.poll(poll_freq);
+                        if (consumerRecords.count() != 0) {
+                            consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
+                            writer.commit();
+                            redpanda_engine.consumer.commitAsync();
+                            last_time_consumed = System.currentTimeMillis();
+                        }
+                        else {
+                            if(System.currentTimeMillis() - last_time_consumed > timeout){
+                                try{
+                                    redpanda_engine.consumer.close();                                
+                                }
+                                catch (Exception e){
+                                    System.out.println(e);
+                                }
+                                return;
+                            }
+                        }
                     }
-                    writer.commit();
                 }
             }
         }
