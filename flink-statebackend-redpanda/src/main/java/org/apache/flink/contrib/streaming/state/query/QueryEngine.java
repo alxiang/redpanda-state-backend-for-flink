@@ -44,7 +44,7 @@ public class QueryEngine {
     JiffyClient client;
     public String directory_daemon_address;
 
-    private QueryEngine(String directory_daemon_address_){
+    private QueryEngine(String table_name, String directory_daemon_address_){
 
         directory_daemon_address = directory_daemon_address_;
 
@@ -55,7 +55,10 @@ public class QueryEngine {
         connectToJiffy();
 
         // Ask Jiffy for a memory mapped file for the parquet file
-        allocateJiffyFile("/usr/local/var/questdb/Table/default/column1.d");
+        allocateJiffyFile("/home/alec/.questdb/"+table_name+"/default/count.d");
+        allocateJiffyFile("/home/alec/.questdb/"+table_name+"/default/ts.d");
+        allocateJiffyFile("/home/alec/.questdb/"+table_name+"/default/word.d");
+        allocateJiffyFile("/home/alec/.questdb/"+table_name+"/default/word.i");
 
         System.out.println("RedpandaConsumer, JiffyClient, and Jiffy files successfully initialized.");
     }
@@ -97,6 +100,7 @@ public class QueryEngine {
         try {
             String hostAddress = InetAddressLocalHostUtil.getLocalHostAsString();
             System.out.println("Got the local host address as: " + hostAddress);
+            System.out.println("Asking for Jiffy file at: " + filePath);
 
             client.createFile(filePath, "local://usr", hostAddress);
         } catch (Exception e) {
@@ -105,9 +109,10 @@ public class QueryEngine {
     }
 
     public static void main(String[] args) throws SqlException {
-        QueryEngine myEngine = new QueryEngine("192.168.122.132");
+        String table_name = "wikitable";
+        QueryEngine myEngine = new QueryEngine(table_name, "192.168.122.132");
 
-        final CairoConfiguration configuration = new DefaultCairoConfiguration("/tmp/questdb");
+        final CairoConfiguration configuration = new DefaultCairoConfiguration("/home/alec/.questdb");
         // CairoEngine is a resource manager for embedded QuestDB
         try (CairoEngine engine = new CairoEngine(configuration)) { 
             // Execution context is a conduit for passing SQL execution artefacts to the execution site
@@ -115,11 +120,18 @@ public class QueryEngine {
             try (SqlCompiler compiler = new SqlCompiler(engine)) {
 
                 // PageFrameCursor cursor = ...; // Setup PageFrameCursor instance
+                // drop the table if it exists
+                try {
+                    compiler.compile("drop table "+table_name, ctx);
+                } catch (Exception e) {
+                    //TODO: handle exception
+                }
+                
                 // An easy way to create the table
-                compiler.compile("create table abc (word string, count long, ts timestamp) timestamp(ts)", ctx);
+                compiler.compile("create table "+table_name+" (word string, count long, ts timestamp) timestamp(ts)", ctx);
 
                 // This TableWriter instance has an exclusive (intra and interprocess) lock on the table
-                try (TableWriter writer = engine.getWriter(ctx.getCairoSecurityContext(), "abc", "testing")) {
+                try (TableWriter writer = engine.getWriter(ctx.getCairoSecurityContext(), table_name, "testing")) {
                     for (int i = 0; i < 11; i++){
                         TableWriter.Row row = writer.newRow();//Os.currentTimeMicros());
                         row.putStr(0, "hello");
