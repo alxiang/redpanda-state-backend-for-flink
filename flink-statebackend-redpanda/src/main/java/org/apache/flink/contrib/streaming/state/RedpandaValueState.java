@@ -33,13 +33,23 @@ import org.apache.flink.util.FlinkRuntimeException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 // Redpanda imports
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
+
+import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.ListConsumerGroupsResult;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 
 // ChronicleMap imports
 import net.openhft.chronicle.map.ChronicleMap;
@@ -80,6 +90,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public String TOPIC; // if not set, defaults to memory address of this object
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
     String hostAddress;
+    AdminClient admin;
 
     // Our Redpanda thread
     public RedpandaConsumer<K, V, N> thread;
@@ -135,6 +146,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.kvStore = createChronicleMap();
         // Create Redpanda producer
         this.producer = this.createProducer();
+        // Create an AdminClient 
+        Properties props = new Properties();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                            directory_daemon_address+":9192");
+        props.put(AdminClientConfig.CLIENT_ID_CONFIG, "ValueStateAdmin");
+        this.admin = AdminClient.create(props);
 
         // Set up a consumer if we also want to read from Redpanda
         if(USE_REDPANDA){
@@ -333,22 +350,36 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return true;
     }
 
-    public void checkpoint() throws InterruptedException{
-        // System.out.println("in checkpoint");
-        if (chronicleMapInitialized && last_sent != null && num_sent  > 1000) {
-            // s.thread.catch_up();
-            // s.thread.in_control = false;
-            while(last_sent > thread.latest_time){
-                // System.out.println("[CHECKPOINT]: " + last_sent + " " + thread.latest_time);
-                // System.out.println("[CHECKPOINT]: " + num_sent + " " + thread.num_consumed + "\n");
-                Thread.sleep(1);
+    public void checkpoint() throws InterruptedException, ExecutionException{
+
+        Collection<ConsumerGroupListing> groups = this.admin.listConsumerGroups().all().get();
+        for (ConsumerGroupListing consumerGroupListing : groups) {
+            Map<TopicPartition, OffsetAndMetadata> offsets = this.admin
+                .listConsumerGroupOffsets(consumerGroupListing.groupId())
+                .partitionsToOffsetAndMetadata().get();
+
+            for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+                if(entry.getKey().topic().equals(TOPIC)){
+                    System.out.println("Offset from consumer group: " + entry.getValue().offset());
+                }
             }
+        }
+
+        // // System.out.println("in checkpoint");
+        // if (chronicleMapInitialized && last_sent != null && num_sent  > 1000) {
+        //     // s.thread.catch_up();
+        //     // s.thread.in_control = false;
+        //     while(last_sent > thread.latest_time){
+        //         // System.out.println("[CHECKPOINT]: " + last_sent + " " + thread.latest_time);
+        //         // System.out.println("[CHECKPOINT]: " + num_sent + " " + thread.num_consumed + "\n");
+        //         Thread.sleep(1);
+        //     }
            
-            // s.thread.in_control = true;
-            // s.thread.curr_records = 0;
-            // s.thread.total_latency_from_produced = 0L;
-        }    
-        this.last_checkpoint = System.currentTimeMillis();
+        //     // s.thread.in_control = true;
+        //     // s.thread.curr_records = 0;
+        //     // s.thread.total_latency_from_produced = 0L;
+        // }    
+        // this.last_checkpoint = System.currentTimeMillis();
     }
     
     @Override
