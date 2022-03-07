@@ -122,7 +122,7 @@ public class QueryEngine {
 
     public static void main(String[] args) throws SqlException {
 
-        Long timeout = 5000L;
+        Long timeout = 60000L;
         Long poll_freq = 10L;
 
         String table_name = "wikitable";
@@ -153,8 +153,9 @@ public class QueryEngine {
                     while (true) {
 
                         final ConsumerRecords<String, Long> consumerRecords = redpanda_engine.consumer.poll(poll_freq);
-                        System.out.println("Received records: " + consumerRecords.count());
+                       
                         if (consumerRecords.count() != 0) {
+                            System.out.println("Received records: " + consumerRecords.count());
                             
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
                             writer.commit();

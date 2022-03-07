@@ -7,9 +7,16 @@ windows:
       panes:
       - experiments-shell:
         - cd ../experiments
+      - query-engine-shell:
+        - cd ../flink-statebackend-redpanda
       - kube-launch:
         - ./kube-teardown.sh; ./kube-startup.sh
-      - jiffy:
+      - directory-daemon:
         - cd ~/jiffy && directoryd
+      - storage-daemon:
+        - cd ~/jiffy && storaged
       - redpanda:
         - systemctl status redpanda
+      - questdb:
+        - $HOME/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh stop; $HOME/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start
+

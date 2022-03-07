@@ -100,9 +100,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public String directory_daemon_address;
 
     // Snapshotting
-    Long last_sent;
+    public Long last_sent;
     Long num_sent = 0L;
-    Long checkpointing_interval = 20L; // time between checkpoints
+    Long checkpointing_interval = 100L; // time between checkpoints
     Long last_checkpoint = 0L;
 
 
@@ -157,11 +157,11 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         if(USE_REDPANDA){
         
             // Startup the Redpanda Consumer as an async thread
-            this.thread = new RedpandaConsumer<>(this.backend, this);
-            this.thread.setName("RedpandaConsumer-thread");
-            this.thread.initialize();
-            this.thread.setPriority(10);
-            this.thread.start();
+            // this.thread = new RedpandaConsumer<>(this.backend, this);
+            // this.thread.setName("RedpandaConsumer-thread");
+            // this.thread.initialize();
+            // this.thread.setPriority(10);
+            // this.thread.start();
         }
     }
 
@@ -286,25 +286,27 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
         // Checkpoint every so often if async mode,
         // reducing producer throughput but increasing data freshness
-        // if(BATCH_WRITES && System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
-        //     try {
-        //         checkpoint();
-        //     } catch (Exception e) {
-        //         //TODO: handle exception
-        //     }
-        // }
+
+        // BATCH_WRITES
+        if(System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
+            try {
+                Long start = System.currentTimeMillis();
+                checkpoint();
+                last_checkpoint = System.currentTimeMillis();
+                System.out.println("Checkpoint took: " + (last_checkpoint-start));
+            } catch (Exception e) {
+                //TODO: handle exception
+            }
+        }
 
         final ProducerRecord<K, V> record;
 
-        this.last_sent = System.currentTimeMillis();
         this.num_sent += 1;
 
         // TODO - get this out of the hot path via Java's equivalent of templating
         if(key_class_name == "java.lang.String" && value_class_name == "java.lang.String"){
             record = (ProducerRecord<K, V>) new ProducerRecord<String, String>(
                 TOPIC, 
-                null,
-                this.last_sent,
                 key.toString(), 
                 value.toString()
             );
@@ -312,8 +314,6 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         else if(key_class_name == "java.lang.String" && value_class_name == "java.lang.Long"){
             record = (ProducerRecord<K, V>) new ProducerRecord<String, Long>(
                 TOPIC, 
-                null,
-                this.last_sent,
                 key.toString(), 
                 (Long) value
             );
@@ -321,8 +321,6 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         else if(key_class_name == "java.lang.Long" && value_class_name == "java.lang.Long"){
             record = (ProducerRecord<K, V>) new ProducerRecord<Long, Long>(
                 TOPIC, 
-                null,
-                this.last_sent,
                 (Long) key, 
                 (Long) value
             );
@@ -339,7 +337,16 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                 this.producer.send(record).get();
             }
             else{
-                this.producer.send(record);
+                this.producer.send(record, new Callback(){
+                    public void onCompletion(RecordMetadata recordMetadata, Exception e){
+                        if(e == null){
+                            RedpandaValueState.this.last_sent = recordMetadata.offset();
+                        }
+                        else{
+                            System.out.println("ERROR in async send callback");
+                        }
+                    }
+                });
             }
         }
         catch(Exception e) {
@@ -352,34 +359,24 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     public void checkpoint() throws InterruptedException, ExecutionException{
 
+        boolean flag = true;
         Collection<ConsumerGroupListing> groups = this.admin.listConsumerGroups().all().get();
-        for (ConsumerGroupListing consumerGroupListing : groups) {
-            Map<TopicPartition, OffsetAndMetadata> offsets = this.admin
-                .listConsumerGroupOffsets(consumerGroupListing.groupId())
-                .partitionsToOffsetAndMetadata().get();
-
-            for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-                if(entry.getKey().topic().equals(TOPIC)){
-                    System.out.println("Offset from consumer group: " + entry.getValue().offset());
+        
+        while(flag){
+            flag = false;
+            for (ConsumerGroupListing consumerGroupListing : groups) {
+                Map<TopicPartition, OffsetAndMetadata> offsets = this.admin
+                    .listConsumerGroupOffsets(consumerGroupListing.groupId())
+                    .partitionsToOffsetAndMetadata().get();
+    
+                for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
+                    if(entry.getKey().topic().equals(TOPIC) && entry.getValue().offset() < this.last_sent){
+                        flag = true;
+                        System.out.println("Offset from consumer group: " +  entry.getValue().offset() + "/" + this.last_sent);
+                    }
                 }
             }
         }
-
-        // // System.out.println("in checkpoint");
-        // if (chronicleMapInitialized && last_sent != null && num_sent  > 1000) {
-        //     // s.thread.catch_up();
-        //     // s.thread.in_control = false;
-        //     while(last_sent > thread.latest_time){
-        //         // System.out.println("[CHECKPOINT]: " + last_sent + " " + thread.latest_time);
-        //         // System.out.println("[CHECKPOINT]: " + num_sent + " " + thread.num_consumed + "\n");
-        //         Thread.sleep(1);
-        //     }
-           
-        //     // s.thread.in_control = true;
-        //     // s.thread.curr_records = 0;
-        //     // s.thread.total_latency_from_produced = 0L;
-        // }    
-        // this.last_checkpoint = System.currentTimeMillis();
     }
     
     @Override
