@@ -122,7 +122,7 @@ public class QueryEngine {
 
     public static void main(String[] args) throws SqlException {
 
-        Long timeout = 60000L;
+        Long timeout = 1800000L;
         Long poll_freq = 10L;
 
         String table_name = "wikitable";

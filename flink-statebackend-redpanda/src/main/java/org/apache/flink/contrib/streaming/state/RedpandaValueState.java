@@ -29,6 +29,7 @@ import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 import org.apache.flink.runtime.state.SerializedCompositeKeyBuilder;
 import org.apache.flink.runtime.state.internal.InternalValueState;
 import org.apache.flink.util.FlinkRuntimeException;
+import org.apache.kafka.common.KafkaFuture;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,6 +105,8 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     Long num_sent = 0L;
     Long checkpointing_interval = 100L; // time between checkpoints
     Long last_checkpoint = 0L;
+    Collection<ConsumerGroupListing> groups;
+    KafkaFuture<Map<TopicPartition, OffsetAndMetadata>> offsets;
 
 
     /**
@@ -151,6 +154,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             directory_daemon_address+":9192");
         props.put(AdminClientConfig.CLIENT_ID_CONFIG, "ValueStateAdmin");
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 300);
         this.admin = AdminClient.create(props);
 
         // Set up a consumer if we also want to read from Redpanda
@@ -288,12 +292,21 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // reducing producer throughput but increasing data freshness
 
         // BATCH_WRITES
+        if(System.currentTimeMillis() - last_checkpoint > checkpointing_interval/2){
+            try {   
+                async_checkpoint();
+            } catch (Exception e) {
+                //TODO: handle exception
+            }
+        }
+        
         if(System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
             try {
+                
                 Long start = System.currentTimeMillis();
                 checkpoint();
                 last_checkpoint = System.currentTimeMillis();
-                System.out.println("Checkpoint took: " + (last_checkpoint-start));
+                System.out.println("[CHECKPOINT]: " + (last_checkpoint-start));
             } catch (Exception e) {
                 //TODO: handle exception
             }
@@ -357,26 +370,52 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return true;
     }
 
+    public void async_checkpoint() throws InterruptedException, ExecutionException{
+        // prefetch from kafka admin to save time
+        if(groups == null)
+            groups = this.admin.listConsumerGroups().all().get();
+        
+        for (ConsumerGroupListing consumerGroupListing : groups) {
+
+            // dont send a request unless last one has been processed
+            if(offsets == null){
+                offsets = this.admin
+                        .listConsumerGroupOffsets(consumerGroupListing.groupId())
+                        .partitionsToOffsetAndMetadata();
+            }
+        }
+    }
+
     public void checkpoint() throws InterruptedException, ExecutionException{
 
         boolean flag = true;
-        Collection<ConsumerGroupListing> groups = this.admin.listConsumerGroups().all().get();
+        if(groups == null)
+            groups = this.admin.listConsumerGroups().all().get();
         
         while(flag){
             flag = false;
-            for (ConsumerGroupListing consumerGroupListing : groups) {
-                Map<TopicPartition, OffsetAndMetadata> offsets = this.admin
-                    .listConsumerGroupOffsets(consumerGroupListing.groupId())
-                    .partitionsToOffsetAndMetadata().get();
-    
-                for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.entrySet()) {
-                    if(entry.getKey().topic().equals(TOPIC) && entry.getValue().offset() < this.last_sent){
-                        flag = true;
-                        System.out.println("Offset from consumer group: " +  entry.getValue().offset() + "/" + this.last_sent);
-                    }
+            Map<TopicPartition, OffsetAndMetadata> real_offsets = null;
+            // try prefetching offsets from before
+            if(offsets != null){
+                real_offsets = offsets.get();
+                offsets = null;
+            }
+            else{
+                for (ConsumerGroupListing consumerGroupListing : groups) {
+                    real_offsets = this.admin
+                        .listConsumerGroupOffsets(consumerGroupListing.groupId())
+                        .partitionsToOffsetAndMetadata().get();
+                }
+            }
+
+            for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : real_offsets.entrySet()) {
+                if(entry.getKey().topic().equals(TOPIC) && entry.getValue().offset() < this.last_sent){
+                    flag = true;
+                    System.out.println("Offset from consumer group: " +  entry.getValue().offset() + "/" + this.last_sent);
                 }
             }
         }
+        
     }
     
     @Override

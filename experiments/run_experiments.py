@@ -132,13 +132,15 @@ def run_experiment_trials(args):
 
             # get the latency from kubernetes logs
             if(backend == "redpanda"):
-                latencies = get_latencies_from_pod_logs(pods, start_time)
+                latencies, stdevs, checkpoint_times = get_latencies_from_pod_logs(pods, start_time)
                 result.append({
                     "trial": i,
                     "backend": backend, 
                     "benchmark": benchmark,
                     "redpanda_async": redpanda_async,
-                    "latencies": latencies
+                    "latencies": latencies,
+                    "latency_stdevs": stdevs,
+                    "checkpoint_times": checkpoint_times
                 })
             
 
@@ -179,9 +181,11 @@ def get_latencies_from_pod_logs(pods, start_time):
 
     res1 = []
     res2 = []
+    res3 = []
     for log in logs:
         latencies = []
         stdevs = []
+        checkpoint_times = []
         log_as_list = log.split("\n")
         for x in log_as_list:
             print(x)
@@ -191,13 +195,19 @@ def get_latencies_from_pod_logs(pods, start_time):
             if(x.find("[LATENCY_STDEV]") != -1):
                 _, stdev = x.split(" ")
                 stdevs.append(float(stdev))
+            if(x.find("[CHECKPOINT]") != -1):
+                _, checkpoint_time = x.split(" ")
+                checkpoint_times.append(float(checkpoint_time))
+
 
         if(len(latencies) > 0):
             res1.append(latencies)
         if(len(stdevs) > 0):
             res2.append(stdevs)
+        if(len(checkpoint_times) > 0):
+            res3.append(checkpoint_times)
 
-    return res1, res2
+    return res1, res2, res3
 
 def reset_kube_cluster(args):
     print("Reseting the kube cluster")
