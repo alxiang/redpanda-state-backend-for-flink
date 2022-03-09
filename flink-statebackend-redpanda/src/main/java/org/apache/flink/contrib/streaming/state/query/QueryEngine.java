@@ -17,6 +17,8 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
+import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
 
 // QuestDB imports
 import io.questdb.cairo.CairoConfiguration;
@@ -78,6 +80,11 @@ public class QueryEngine {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
                                             directory_daemon_address+":9192");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "OffsetProducer (QueryEngine)");
+
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                LongSerializer.class.getName());
 
         // for improving synchronous writing
         props.put("acks", "1"); // acknowledgement only from leader broker
