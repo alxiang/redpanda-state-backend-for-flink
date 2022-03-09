@@ -108,7 +108,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public Long last_sent;
     public Long last_consumed_by_query_engine;
     Long num_sent = 0L;
-    Long checkpointing_interval = 10L; // time between checkpoints
+    Long checkpointing_interval = 1000L; // time between checkpoints
     Long last_checkpoint = 0L;
     Collection<ConsumerGroupListing> groups;
     KafkaFuture<Map<TopicPartition, OffsetAndMetadata>> offsets;
@@ -242,7 +242,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     private Consumer<String, Long> createOffsetConsumer() {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, directory_daemon_address+":9192");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "OffsetConsumer (RPValueState)");
+
+        String tag = this.toString().substring(this.toString().lastIndexOf("@")+1);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "OffsetConsumer (RPValueState)-"+tag);
 
 
         // performance configs
