@@ -108,7 +108,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public Long last_sent;
     public Long last_consumed_by_query_engine;
     Long num_sent = 0L;
-    Long checkpointing_interval = 100L; // time between checkpoints
+    Long checkpointing_interval = 10L; // time between checkpoints
     Long last_checkpoint = 0L;
     Collection<ConsumerGroupListing> groups;
     KafkaFuture<Map<TopicPartition, OffsetAndMetadata>> offsets;
