@@ -10,6 +10,10 @@ import java.nio.charset.StandardCharsets;
 // Redpanda consumer imports
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -37,8 +41,10 @@ public class QueryEngine {
 
     // Redpanda integration
     public Consumer<String, Long> consumer;
+    public Producer<String, Long> producer;
     static String TOPIC = "Wiki";
     private final static String BOOTSTRAP_SERVERS = "localhost:9192"; //"192.168.122.131:9192";
+    public Long latest_offset;
 
     // Jiffy integration
     JiffyClient client;
@@ -51,6 +57,9 @@ public class QueryEngine {
         // Create the consumer from Redpanda, subscribing to Wiki
         createConsumer();
 
+        // Create a producer publishing consumed offsets to Redpanda at WikiOffsets
+        createProducer();
+
         // Setup Jiffy connection
         connectToJiffy();
 
@@ -62,6 +71,34 @@ public class QueryEngine {
 
         System.out.println("RedpandaConsumer, JiffyClient, and Jiffy files successfully initialized.");
     }
+
+    private void createProducer() {
+        // Configuring the producer
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                            directory_daemon_address+":9192");
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "OffsetProducer (QueryEngine)");
+
+        // for improving synchronous writing
+        props.put("acks", "1"); // acknowledgement only from leader broker
+        props.put("max.in.flight.requests.per.connection", "1"); // ordering guarantees
+
+        // Handle dynamic types, though String may be enough for query engines (convert strings to json)
+        producer = new KafkaProducer<String, Long>(props);
+    }
+    
+    public void produceOffset() {
+        final ProducerRecord<String, Long> record;
+
+        record = new ProducerRecord<String, Long>(
+            TOPIC+"Offsets", 
+            "placeholder",
+            latest_offset
+        );
+        
+        this.producer.send(record);
+    }
+
 
     private void createConsumer() {
         final Properties props = new Properties();
@@ -113,6 +150,7 @@ public class QueryEngine {
     private void processRecord(ConsumerRecord<String, Long> record, TableWriter writer) {
         String key = record.key();
         Long value = record.value();
+        latest_offset = record.offset();
 
         TableWriter.Row row = writer.newRow(record.timestamp());
         row.putStr(0, key);
@@ -160,6 +198,7 @@ public class QueryEngine {
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
                             writer.commit();
                             redpanda_engine.consumer.commitAsync();
+                            redpanda_engine.produceOffset();
                             last_time_consumed = System.currentTimeMillis();
                         }
                         else {
