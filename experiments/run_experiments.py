@@ -33,6 +33,7 @@ def launch_flink_job(args, flink_path, root_path):
     port = args.port
     redpanda_async = args.redpanda_async
     use_redpanda = args.use_redpanda
+    checkpointing_interval = args.checkpointing_interval
 
     proc = subprocess.Popen([
         f"{flink_path}/bin/flink",
@@ -46,7 +47,8 @@ def launch_flink_job(args, flink_path, root_path):
         redpanda_async, # whether to use redpanda async batching
         benchmark, # topic
         "192.168.122.132", # master machine address
-        use_redpanda # whether or not to back the backend with redpanda
+        use_redpanda, # whether or not to back the backend with redpanda
+        checkpointing_interval
     ], stdout=subprocess.PIPE)
    
     return proc
@@ -253,6 +255,7 @@ def main():
     parser.add_argument('redpanda_async', type=str, default='true')
     parser.add_argument('jobs', type=int, default=1)
     parser.add_argument('use_redpanda', type=str, default='true', nargs='?')
+    parser.add_argument('checkpointing_interval', type=str, default="10", nargs='?')
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()
 

@@ -47,6 +47,7 @@ public class WikiBenchmark {
 		boolean async = false;
 		String directory_daemon_address = "127.0.0.1";
 		boolean redpanda = true;
+		Long checkpointing_interval = 10L;
 
 		if(args.length >= 2){
 			if(args[1].equals("true")){
@@ -64,8 +65,11 @@ public class WikiBenchmark {
 				redpanda = false;
 			}
 		}
+		if(args.length >= 6){
+			checkpointing_interval = Long.valueOf(args[5]);
+		}
 
-		String filePath = "file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-10k.txt";
+		String filePath = "file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-100k.txt";
 		// TextInputFormat format = new TextInputFormat(new Path(filePath));
         // format.setCharsetName("UTF-8");
 
@@ -82,7 +86,7 @@ public class WikiBenchmark {
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 
 		DataStream<Tuple2<String, Long>> mapper = tokenized.keyBy(record -> record.f0)
-				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address, redpanda)) 
+				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address, redpanda, checkpointing_interval)) 
 				.slotSharingGroup("map");
 
 		mapper.addSink(new DiscardingSink<>())

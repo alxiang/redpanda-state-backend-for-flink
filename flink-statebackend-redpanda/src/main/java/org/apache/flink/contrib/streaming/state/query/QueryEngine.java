@@ -47,6 +47,9 @@ public class QueryEngine {
     static String TOPIC = "Wiki";
     private final static String BOOTSTRAP_SERVERS = "localhost:9192"; //"192.168.122.131:9192";
     public Long latest_offset;
+    public Long latest_ts = 0L;
+    public Long latest_committed_ts = 0L;
+    public Long first_ts;
 
     // Jiffy integration
     JiffyClient client;
@@ -155,9 +158,15 @@ public class QueryEngine {
     }
 
     private void processRecord(ConsumerRecord<String, Long> record, TableWriter writer) {
+
+        if(first_ts == null){
+            first_ts = record.timestamp();
+        }
+
         String key = record.key();
         Long value = record.value();
         latest_offset = record.offset();
+        latest_ts = record.timestamp();
 
         TableWriter.Row row = writer.newRow(record.timestamp());
         row.putStr(0, key);
@@ -169,6 +178,12 @@ public class QueryEngine {
 
         Long timeout = 1800000L;
         Long poll_freq = 10L;
+        Long checkpointing_interval = 10L;
+        if(args.length >= 1){
+            checkpointing_interval = Long.valueOf(args[0]);
+        }
+        System.out.println("Checkpointing interval (commit frequency): " + checkpointing_interval);
+        
 
         String table_name = "wikitable";
         QueryEngine redpanda_engine = new QueryEngine(table_name, "192.168.122.132");
@@ -202,8 +217,14 @@ public class QueryEngine {
                         if (consumerRecords.count() != 0) {
                             System.out.println("Received records: " + consumerRecords.count());
                             
+                            
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
-                            writer.commit();
+                            System.out.println("Runtime: " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
+                            if(redpanda_engine.latest_ts - redpanda_engine.latest_committed_ts >= checkpointing_interval){
+                                writer.commit();
+                                redpanda_engine.latest_committed_ts = redpanda_engine.latest_ts;
+                            }
+
                             redpanda_engine.consumer.commitAsync();
                             redpanda_engine.produceOffset();
                             last_time_consumed = System.currentTimeMillis();

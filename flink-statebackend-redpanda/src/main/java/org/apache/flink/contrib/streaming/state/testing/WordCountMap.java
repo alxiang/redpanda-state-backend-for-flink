@@ -18,6 +18,7 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
     private boolean BATCH_WRITES = false;
     private String directory_daemon_address;
     private boolean USE_REDPANDA = true;
+    private Long checkpointing_interval = 10L;
 
     public WordCountMap() {
     }
@@ -32,11 +33,12 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
         directory_daemon_address = directory_daemon_address_;
     }
 
-    public WordCountMap(String REDPANDA_TOPIC, boolean BATCH_WRITES_, String directory_daemon_address_, boolean USE_REDPANDA_) {
+    public WordCountMap(String REDPANDA_TOPIC, boolean BATCH_WRITES_, String directory_daemon_address_, boolean USE_REDPANDA_, Long checkpointing_interval_) {
         TOPIC = REDPANDA_TOPIC;
         BATCH_WRITES = BATCH_WRITES_;
         directory_daemon_address = directory_daemon_address_;
         USE_REDPANDA = USE_REDPANDA_;
+        checkpointing_interval = checkpointing_interval_;
     }
 
     // https://ci.apache.org/projects/flink/flink-docs-release-1.1/apis/streaming/state.html
@@ -73,6 +75,7 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
                 ((RedpandaValueState) count).BATCH_WRITES = BATCH_WRITES;
                 ((RedpandaValueState) count).directory_daemon_address = directory_daemon_address;
                 ((RedpandaValueState) count).USE_REDPANDA = USE_REDPANDA;
+                ((RedpandaValueState) count).checkpointing_interval = checkpointing_interval;
                 System.out.println("Re-set topic to: " + TOPIC);
                 if(BATCH_WRITES){
                     System.out.println("Batching writes set");
