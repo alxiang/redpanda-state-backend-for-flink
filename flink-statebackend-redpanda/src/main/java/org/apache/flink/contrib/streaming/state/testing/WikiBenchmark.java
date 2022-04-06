@@ -85,6 +85,7 @@ public class WikiBenchmark {
 
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 
+		System.out.println("[WIKI BENCHMARK] Set checkpointing interval to: " + checkpointing_interval);
 		DataStream<Tuple2<String, Long>> mapper = tokenized.keyBy(record -> record.f0)
 				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address, redpanda, checkpointing_interval)) 
 				.slotSharingGroup("map");

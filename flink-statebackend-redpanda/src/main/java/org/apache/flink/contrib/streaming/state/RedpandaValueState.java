@@ -84,6 +84,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
     KafkaProducer<K, V> producer;    
     KafkaConsumer<String, Long> offsetConsumer;
+    KafkaProducer<String, Long> checkpointProducer;
     public String key_class_name;
     public String value_class_name;
     //  if false, uses synchronous writes to Redpanda (lower latency and throughput)
@@ -105,7 +106,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     public String directory_daemon_address;
 
     // Snapshotting
-    public Long last_sent;
+    public Long last_sent = 0L;
     public Long last_consumed_by_query_engine;
     Long num_sent = 0L;
     public Long checkpointing_interval = 10L; // time between checkpoints
@@ -154,15 +155,12 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         this.kvStore = createChronicleMap();
         // Create Redpanda producer
         this.producer = this.createProducer();
+
+
         // Create Redpanda offset consumer
         this.offsetConsumer = (KafkaConsumer<String, Long>) this.createOffsetConsumer();
-        // Create an AdminClient 
-        Properties props = new Properties();
-        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG,
-                                            directory_daemon_address+":9192");
-        props.put(AdminClientConfig.CLIENT_ID_CONFIG, "ValueStateAdmin");
-        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 300);
-        this.admin = AdminClient.create(props);
+        // Create Redpanda checkpoint offset producer
+        this.checkpointProducer = (KafkaProducer<String, Long>) this.createCheckpointProducer();
 
         // Set up a consumer if we also want to read from Redpanda
         if(USE_REDPANDA){
@@ -267,6 +265,24 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         return offsetConsumer;
     }
 
+    private KafkaProducer<String, Long> createCheckpointProducer() {
+        // Configuring the producer
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                                            directory_daemon_address+":9192");
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "RedpandaProducer (Cheeckpointer)");
+
+        // for improving synchronous writing
+        props.put("acks", "1"); // acknowledgement only from leader broker
+        props.put("max.in.flight.requests.per.connection", "1"); // ordering guarantees
+
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                                    StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                                    LongSerializer.class.getName());
+        return new KafkaProducer<String, Long>(props);
+    }
+
     private KafkaProducer<K, V> createProducer() {
 
         // Configuring the producer
@@ -334,6 +350,7 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
                 checkpoint();
                 last_checkpoint = System.currentTimeMillis();
                 System.out.println("[CHECKPOINT]: " + (last_checkpoint-start));
+                System.out.println("[DEBUG INTERVAL]:" + checkpointing_interval);
             } catch (Exception e) {
                 //TODO: handle exception
             }
@@ -418,6 +435,14 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
     }
 
     public void checkpoint() throws InterruptedException, ExecutionException{
+
+        // Produce the most recent offset to start the checkpoint
+        ProducerRecord<String, Long> checkpoint_record = new ProducerRecord<String, Long>(
+            TOPIC+"Checkpoint", 
+            "todo", // make this the machine address in the future?
+            this.last_sent
+        );
+        this.checkpointProducer.send(checkpoint_record).get();
 
         boolean flag = true;
         

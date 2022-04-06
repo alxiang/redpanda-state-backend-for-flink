@@ -100,6 +100,15 @@ def run_experiment_trials(args):
                     'delete',
                     benchmark + "Offsets"
                 ], capture_output=True)
+
+                print(f"cleaning redpanda topic: {benchmark+'Checkpoint'}")
+
+                output = subprocess.run([
+                    'rpk',
+                    'topic',
+                    'delete',
+                    benchmark + "Checkpoint"
+                ], capture_output=True)
                 
                 # assert(output.returncode == 0)
 

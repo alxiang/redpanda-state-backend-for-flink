@@ -77,6 +77,7 @@ public class WordCountMap extends RichFlatMapFunction<Tuple2<String, Long>, Tupl
                 ((RedpandaValueState) count).USE_REDPANDA = USE_REDPANDA;
                 ((RedpandaValueState) count).checkpointing_interval = checkpointing_interval;
                 System.out.println("Re-set topic to: " + TOPIC);
+                System.out.println("Set checkpointing interval to: " + checkpointing_interval);
                 if(BATCH_WRITES){
                     System.out.println("Batching writes set");
                 }
