@@ -343,18 +343,18 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
         // reducing producer throughput but increasing data freshness
 
         // BATCH_WRITES
-        if(System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
-            try {
+        // if(System.currentTimeMillis() - last_checkpoint > checkpointing_interval){
+        //     try {
                 
-                Long start = System.currentTimeMillis();
-                checkpoint();
-                last_checkpoint = System.currentTimeMillis();
-                System.out.println("[CHECKPOINT]: " + (last_checkpoint-start));
-                System.out.println("[DEBUG INTERVAL]:" + checkpointing_interval);
-            } catch (Exception e) {
-                //TODO: handle exception
-            }
-        }
+        //         Long start = System.currentTimeMillis();
+        //         checkpoint();
+        //         last_checkpoint = System.currentTimeMillis();
+        //         System.out.println("[CHECKPOINT]: " + (last_checkpoint-start));
+        //         System.out.println("[DEBUG INTERVAL]:" + checkpointing_interval);
+        //     } catch (Exception e) {
+        //         //TODO: handle exception
+        //     }
+        // }
 
         final ProducerRecord<K, V> record;
 

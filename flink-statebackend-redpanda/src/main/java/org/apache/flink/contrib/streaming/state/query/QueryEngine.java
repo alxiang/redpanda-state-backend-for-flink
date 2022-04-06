@@ -53,6 +53,7 @@ public class QueryEngine {
     public Long latest_ts = 0L;
     public Long latest_committed_ts = 0L;
     public Long first_ts;
+    public bool start_timer
 
     // Jiffy integration
     JiffyClient client;
@@ -188,19 +189,27 @@ public class QueryEngine {
 
     private void processRecord(ConsumerRecord<String, Long> record, TableWriter writer) {
 
-        if(first_ts == null){
-            first_ts = record.timestamp();
-        }
-
         String key = record.key();
         Long value = record.value();
-        latest_offset = record.offset();
-        latest_ts = record.timestamp();
+        
 
-        TableWriter.Row row = writer.newRow(record.timestamp());
-        row.putStr(0, key);
-        row.putLong(1, value);
-        row.append();
+        // Check if this record is a special, checkpointing record
+        if(key.equals("$FLINKCHECKPOINT")){
+            commitOperation(writer);
+        }
+        else{
+            if(first_ts == null){
+                first_ts = record.timestamp();
+            }
+
+            latest_offset = record.offset();
+            latest_ts = record.timestamp();
+
+            TableWriter.Row row = writer.newRow(record.timestamp());
+            row.putStr(0, key);
+            row.putLong(1, value);
+            row.append();
+        }
     }
 
     private void processCheckpointRecord(ConsumerRecord<String, Long> record){
@@ -213,8 +222,15 @@ public class QueryEngine {
         }
     }
 
-    private void commitOperation(){
-        
+    private Long commitOperation(TableWriter writer){
+        System.out.println("Committing with: " + latest_offset);
+        writer.commit();
+        latest_committed_ts = latest_ts;
+
+        consumer.commitAsync();
+        produceOffset();
+        Long last_time_consumed = System.currentTimeMillis();
+        return last_time_consumed;
     }
 
     public static void main(String[] args) throws SqlException {
@@ -269,15 +285,9 @@ public class QueryEngine {
                             
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
                             System.out.println("Runtime: " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
-                            if(redpanda_engine.latest_offset >= redpanda_engine.checkpoint_offset){
-                                System.out.println("Committing with: " + redpanda_engine.latest_offset);
-                                writer.commit();
-                                redpanda_engine.latest_committed_ts = redpanda_engine.latest_ts;
-
-                                redpanda_engine.consumer.commitAsync();
-                                redpanda_engine.produceOffset();
-                                last_time_consumed = System.currentTimeMillis();
-                            }                            
+                            // if(redpanda_engine.latest_offset >= redpanda_engine.checkpoint_offset){
+                            //     last_time_consumed = redpanda_engine.commitOperation(writer);
+                            // }                            
                         }
                         else {
                             if(System.currentTimeMillis() - last_time_consumed > timeout){

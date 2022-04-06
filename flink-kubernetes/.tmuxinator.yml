@@ -9,6 +9,8 @@ windows:
         - cd ../experiments
       - query-engine-shell:
         - cd ../flink-statebackend-redpanda
+      - checkpoint-shell:
+        - cd ../flink-statebackend-redpanda
       - kube-launch:
         - ./kube-teardown.sh; ./kube-startup.sh
       - directory-daemon:
