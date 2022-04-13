@@ -23,7 +23,7 @@ RUN apt-get install -y systemd
 
 # Clone Jiffy
 RUN apt install -y git
-RUN git clone -b cluster git://github.com/alxiang/jiffy.git && cd jiffy && mkdir -p build && cd build
+RUN git clone -b cluster git@github.com:alxiang/jiffy.git && cd jiffy && mkdir -p build && cd build
 
 # Install Jiffy requirements
 # RUN snap install cmake --classic
@@ -45,6 +45,5 @@ ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 RUN export JAVA_HOME
 RUN cd jiffy && git checkout cluster && cd build && cmake .. && make -j 4 && make install
 
-#  Start a storage daemon
-# RUN cd .. && storaged
-
+# Install QuestDB
+RUN wget https://github.com/questdb/questdb/releases/download/6.2.1/questdb-6.2.1-rt-linux-amd64.tar.gz && tar -xvf questdb-6.2.1-rt-linux-amd64.tar.gz 
