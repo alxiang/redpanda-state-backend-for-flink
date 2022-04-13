@@ -53,7 +53,6 @@ public class QueryEngine {
     public Long latest_ts = 0L;
     public Long latest_committed_ts = 0L;
     public Long first_ts;
-    public bool start_timer
 
     // Jiffy integration
     JiffyClient client;
@@ -284,7 +283,10 @@ public class QueryEngine {
                             
                             
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
-                            System.out.println("Runtime: " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
+                            if(redpanda_engine.first_ts != null){
+                                System.out.println("Runtime: " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
+                            }
+                            
                             // if(redpanda_engine.latest_offset >= redpanda_engine.checkpoint_offset){
                             //     last_time_consumed = redpanda_engine.commitOperation(writer);
                             // }                            
