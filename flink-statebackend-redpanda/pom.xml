@@ -71,11 +71,11 @@ under the License.
 
 	<dependencies>
 
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-statebackend-rocksdb</artifactId>
 			<version>1.15-SNAPSHOT</version>
-		</dependency>
+		</dependency> -->
 
 		<dependency>
 			<groupId>org.json</groupId>
