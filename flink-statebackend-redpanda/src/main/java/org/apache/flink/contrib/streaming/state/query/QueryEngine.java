@@ -33,6 +33,7 @@ import io.questdb.griffin.SqlExecutionContextImpl;
 import io.questdb.std.Os;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
@@ -53,6 +54,18 @@ public class QueryEngine {
     public Long latest_ts = 0L;
     public Long latest_committed_ts = 0L;
     public Long first_ts;
+
+    // empirically measuring freshness
+
+    // number of records in buffer
+    public ArrayList<Integer> checkpoint_buffer_sizes = new ArrayList<Integer>();
+
+    // last_record_in_buffer.timestamp() - first_record_in_buffer.timestamp()
+    public ArrayList<Long> checkpoint_buffer_lengths = new ArrayList<Long>();
+
+    // average time since latest record in buffer
+    public ArrayList<Long> buffer_timestamps = new ArrayList<Long>();
+    public ArrayList<Double> checkpoint_timestamp_deltas = new ArrayList<Double>(); 
 
     // Jiffy integration
     JiffyClient client;
@@ -195,6 +208,7 @@ public class QueryEngine {
         // Check if this record is a special, checkpointing record
         if(key.equals("$FLINKCHECKPOINT")){
             commitOperation(writer);
+            buffer_timestamps.clear();
         }
         else{
             if(first_ts == null){
@@ -208,6 +222,8 @@ public class QueryEngine {
             row.putStr(0, key);
             row.putLong(1, value);
             row.append();
+
+            buffer_timestamps.add(latest_ts);
         }
     }
 
@@ -222,6 +238,11 @@ public class QueryEngine {
     }
 
     private Long commitOperation(TableWriter writer){
+
+        if(latest_offset == null){
+            return null;
+        }
+
         System.out.println("Committing with: " + latest_offset);
         writer.commit();
         latest_committed_ts = latest_ts;
@@ -229,6 +250,20 @@ public class QueryEngine {
         consumer.commitAsync();
         produceOffset();
         Long last_time_consumed = System.currentTimeMillis();
+
+        // statistics
+        int n = buffer_timestamps.size();
+        checkpoint_buffer_sizes.add(n);
+        checkpoint_buffer_lengths.add(latest_committed_ts - buffer_timestamps.get(0));
+
+        ArrayList<Long> deltas = new ArrayList<Long>();
+        for(int i=0; i<n; i++){
+            deltas.add(latest_committed_ts - buffer_timestamps.get(i));
+        }
+        Double mean_delta = deltas.stream().mapToDouble(a -> a).average().orElseThrow();
+        checkpoint_timestamp_deltas.add(mean_delta);
+
+
         return last_time_consumed;
     }
 
@@ -284,7 +319,10 @@ public class QueryEngine {
                             
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
                             if(redpanda_engine.first_ts != null){
-                                System.out.println("Runtime: " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
+                                System.out.println("Runtime              : " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
+                                System.out.println("Average buffer size  : " + redpanda_engine.checkpoint_buffer_sizes.stream().mapToDouble(a -> a).average());
+                                System.out.println("Average buffer length: " + redpanda_engine.checkpoint_buffer_lengths.stream().mapToDouble(a -> a).average());
+                                System.out.println("Average freshness    : " + redpanda_engine.checkpoint_timestamp_deltas.stream().mapToDouble(a -> a).average());
                             }
                             
                             // if(redpanda_engine.latest_offset >= redpanda_engine.checkpoint_offset){
