@@ -92,6 +92,17 @@ def run_experiment_trials(args):
                     benchmark
                 ], capture_output=True)
 
+                print(f"resetting redpanda topic: {benchmark}")
+                
+                output = subprocess.run([
+                    'rpk',
+                    'topic',
+                    'create',
+                    benchmark,
+                    '-c',
+                    'message.timestamp.type=LogAppendTime'
+                ], capture_output=True)
+
                 print(f"cleaning redpanda topic: {benchmark+'Offsets'}")
 
                 output = subprocess.run([

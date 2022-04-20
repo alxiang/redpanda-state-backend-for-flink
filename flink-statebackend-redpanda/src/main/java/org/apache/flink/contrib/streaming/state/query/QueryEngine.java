@@ -67,6 +67,9 @@ public class QueryEngine {
     public ArrayList<Long> buffer_timestamps = new ArrayList<Long>();
     public ArrayList<Double> checkpoint_timestamp_deltas = new ArrayList<Double>(); 
 
+    // average commit duration
+    public ArrayList<Long> commit_durations = new ArrayList<Long>();
+
     // Jiffy integration
     JiffyClient client;
     public String directory_daemon_address;
@@ -207,10 +210,20 @@ public class QueryEngine {
 
         // Check if this record is a special, checkpointing record
         if(key.equals("$FLINKCHECKPOINT")){
+            // if(buffer_timestamps.size() > 0){
+            //     System.out.println("FIRST IN BUFFER: " + buffer_timestamps.get(0));
+            //     System.out.println("LAST IN BUFFER: " + buffer_timestamps.get(buffer_timestamps.size()-1));
+            // }
+           
+            // System.out.println("CHECKPOINTRECORD: " + record.timestamp() + "\n");
+
             commitOperation(writer);
             buffer_timestamps.clear();
+
+            
         }
         else{
+            // System.out.println("RECORD: " + record.timestamp());
             if(first_ts == null){
                 first_ts = record.timestamp();
             }
@@ -239,16 +252,22 @@ public class QueryEngine {
 
     private Long commitOperation(TableWriter writer){
 
-        if(latest_offset == null){
+        if(buffer_timestamps.size() == 0){
             return null;
         }
 
         System.out.println("Committing with: " + latest_offset);
+
+        Long precommit = System.currentTimeMillis();
         writer.commit();
+        Long commit_duration = System.currentTimeMillis() - precommit;
+        commit_durations.add(commit_duration);
+
+
         latest_committed_ts = latest_ts;
 
         consumer.commitAsync();
-        produceOffset();
+        // produceOffset();
         Long last_time_consumed = System.currentTimeMillis();
 
         // statistics
@@ -276,6 +295,7 @@ public class QueryEngine {
             checkpointing_interval = Long.valueOf(args[0]);
         }
         System.out.println("Checkpointing interval (commit frequency): " + checkpointing_interval);
+        Integer last_metric_size = 0;
         
 
         String table_name = "wikitable";
@@ -318,11 +338,15 @@ public class QueryEngine {
                             
                             
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));
-                            if(redpanda_engine.first_ts != null){
-                                System.out.println("Runtime              : " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
-                                System.out.println("Average buffer size  : " + redpanda_engine.checkpoint_buffer_sizes.stream().mapToDouble(a -> a).average());
-                                System.out.println("Average buffer length: " + redpanda_engine.checkpoint_buffer_lengths.stream().mapToDouble(a -> a).average());
-                                System.out.println("Average freshness    : " + redpanda_engine.checkpoint_timestamp_deltas.stream().mapToDouble(a -> a).average());
+                            if(redpanda_engine.first_ts != null && 
+                               redpanda_engine.checkpoint_buffer_sizes.size() > last_metric_size){
+                                System.out.println("Runtime             : " + (redpanda_engine.latest_ts - redpanda_engine.first_ts));
+                                System.out.println("Avg buffer size     : " + redpanda_engine.checkpoint_buffer_sizes.stream().mapToDouble(a -> a).average().getAsDouble());
+                                System.out.println("Avg buffer length   : " + redpanda_engine.checkpoint_buffer_lengths.stream().mapToDouble(a -> a).average().getAsDouble());
+                                System.out.println("Avg freshness       : " + redpanda_engine.checkpoint_timestamp_deltas.stream().mapToDouble(a -> a).average().getAsDouble());
+                                System.out.println("Avg commit duration : " + redpanda_engine.commit_durations.stream().mapToDouble(a -> a).average().getAsDouble());
+                                
+                                last_metric_size = redpanda_engine.checkpoint_buffer_sizes.size();
                             }
                             
                             // if(redpanda_engine.latest_offset >= redpanda_engine.checkpoint_offset){

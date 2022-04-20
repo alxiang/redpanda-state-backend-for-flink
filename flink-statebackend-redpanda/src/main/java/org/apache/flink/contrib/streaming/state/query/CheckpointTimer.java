@@ -15,6 +15,9 @@ import org.apache.kafka.common.serialization.StringSerializer; // record value s
 import java.lang.InterruptedException;
 
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class CheckpointTimer {
@@ -24,6 +27,7 @@ public class CheckpointTimer {
     private final static String BOOTSTRAP_SERVERS = "localhost:9192";
     String directory_daemon_address;
     public Producer<String, Long> producer;
+    public Long last_checkpoint = 0L;
 
     private CheckpointTimer(String directory_daemon_address_){
 
@@ -63,6 +67,10 @@ public class CheckpointTimer {
         );
         
         this.producer.send(record);
+
+        Long now = System.currentTimeMillis();
+        System.out.println(now - last_checkpoint);
+        last_checkpoint = now;
     }
 
     public static void main(String[] args) {
@@ -73,15 +81,9 @@ public class CheckpointTimer {
             interval = Long.valueOf(args[0]);
         }
 
+        Runnable task = () -> checkpoint_timer.produceCheckpoint();
 
-        while(true){
-            checkpoint_timer.produceCheckpoint();
-            try {
-                Thread.sleep(interval);
-            }
-            catch(Exception e) {
-
-            }
-        }
+        final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(task, 0L, interval, TimeUnit.MILLISECONDS);
     }
 }
