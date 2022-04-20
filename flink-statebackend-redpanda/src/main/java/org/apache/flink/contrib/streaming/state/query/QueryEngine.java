@@ -217,7 +217,7 @@ public class QueryEngine {
            
             // System.out.println("CHECKPOINTRECORD: " + record.timestamp() + "\n");
 
-            commitOperation(writer);
+            commitOperation(writer, record.timestamp());
             buffer_timestamps.clear();
 
             
@@ -250,7 +250,7 @@ public class QueryEngine {
         }
     }
 
-    private Long commitOperation(TableWriter writer){
+    private Long commitOperation(TableWriter writer, Long checkpoint_timestamp){
 
         if(buffer_timestamps.size() == 0){
             return null;
@@ -273,11 +273,11 @@ public class QueryEngine {
         // statistics
         int n = buffer_timestamps.size();
         checkpoint_buffer_sizes.add(n);
-        checkpoint_buffer_lengths.add(latest_committed_ts - buffer_timestamps.get(0));
+        checkpoint_buffer_lengths.add(checkpoint_timestamp - buffer_timestamps.get(0));
 
         ArrayList<Long> deltas = new ArrayList<Long>();
         for(int i=0; i<n; i++){
-            deltas.add(latest_committed_ts - buffer_timestamps.get(i));
+            deltas.add(checkpoint_timestamp - buffer_timestamps.get(i));
         }
         Double mean_delta = deltas.stream().mapToDouble(a -> a).average().orElseThrow();
         checkpoint_timestamp_deltas.add(mean_delta);
@@ -334,7 +334,7 @@ public class QueryEngine {
                         final ConsumerRecords<String, Long> consumerRecords = redpanda_engine.consumer.poll(poll_freq);
                        
                         if (consumerRecords.count() != 0) {
-                            System.out.println("Received records: " + consumerRecords.count());
+                            // System.out.println("Received records: " + consumerRecords.count());
                             
                             
                             consumerRecords.forEach(record -> redpanda_engine.processRecord(record, writer));

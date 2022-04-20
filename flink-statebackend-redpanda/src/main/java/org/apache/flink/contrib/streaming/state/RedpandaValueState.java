@@ -158,9 +158,9 @@ public class RedpandaValueState<K, N, V> extends AbstractRedpandaState<K, N, V>
 
 
         // Create Redpanda offset consumer
-        this.offsetConsumer = (KafkaConsumer<String, Long>) this.createOffsetConsumer();
+        // this.offsetConsumer = (KafkaConsumer<String, Long>) this.createOffsetConsumer();
         // Create Redpanda checkpoint offset producer
-        this.checkpointProducer = (KafkaProducer<String, Long>) this.createCheckpointProducer();
+        // this.checkpointProducer = (KafkaProducer<String, Long>) this.createCheckpointProducer();
 
         // Set up a consumer if we also want to read from Redpanda
         if(USE_REDPANDA){

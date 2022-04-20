@@ -57,7 +57,13 @@ public class CheckpointTimer {
         producer = new KafkaProducer<String, Long>(props);
     }
 
-    private void produceCheckpoint(){
+    private void produceCheckpoint(Long interval){
+        Long now = System.currentTimeMillis();
+
+        if(now - last_checkpoint < interval.doubleValue() / 2){
+            return;
+        }
+
         final ProducerRecord<String, Long> record;
 
         record = new ProducerRecord<String, Long>(
@@ -68,7 +74,6 @@ public class CheckpointTimer {
         
         this.producer.send(record);
 
-        Long now = System.currentTimeMillis();
         System.out.println(now - last_checkpoint);
         last_checkpoint = now;
     }
@@ -81,9 +86,11 @@ public class CheckpointTimer {
             interval = Long.valueOf(args[0]);
         }
 
-        Runnable task = () -> checkpoint_timer.produceCheckpoint();
+        final Long INTERVAL = interval;
+
+        Runnable task = () -> checkpoint_timer.produceCheckpoint(INTERVAL);
 
         final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-        executorService.scheduleAtFixedRate(task, 0L, interval, TimeUnit.MILLISECONDS);
+        executorService.scheduleAtFixedRate(task, 0L, INTERVAL, TimeUnit.MILLISECONDS);
     }
 }
