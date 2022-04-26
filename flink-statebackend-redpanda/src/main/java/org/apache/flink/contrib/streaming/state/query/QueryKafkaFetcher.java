@@ -89,6 +89,16 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
         }
     }
 
+    private void reset_table() throws SqlException{
+        this.compiler.compile(
+            "BEGIN TRAN\n"+
+            "DROP TABLE wikitable;\n"+
+            "EXEC sp_rename wikitable_prod, wikitable;\n"+
+            "COMMIT", 
+            ctx
+        );
+    }
+
     @Override
     public final HashMap<KafkaTopicPartition, Long> snapshotCurrentState() throws RuntimeException {
         HashMap<KafkaTopicPartition, Long> state = super.snapshotCurrentState();
@@ -111,6 +121,18 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
             );
         } catch (SqlException e) {
             e.printStackTrace();
+
+            // On error, need to reset the staging table back to the production table
+            int num_retries = 3;
+            for(int i = 0; i < num_retries; i++){
+                try {
+                    reset_table();
+                } catch (SqlException e) {
+                    System.out.println("Failed to reset table, retries left: " + num_retries-i-1);
+                }
+            }
+
+            throw new RuntimeException();
         }
         return state;
     }
