@@ -51,7 +51,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
     public void open(Configuration config) {
         ValueStateDescriptor<String> descriptor =
                 new ValueStateDescriptor<String>(
-                        "JSON Records", // the state name
+                        "QuestDB Records", // the state name
                         TypeInformation.of(new TypeHint<String>() {})); // type information
 
         // Set up questdb

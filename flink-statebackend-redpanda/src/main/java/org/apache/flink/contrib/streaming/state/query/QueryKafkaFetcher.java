@@ -127,8 +127,8 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
             for(int i = 0; i < num_retries; i++){
                 try {
                     reset_table();
-                } catch (SqlException e) {
-                    System.out.println("Failed to reset table, retries left: " + num_retries-i-1);
+                } catch (SqlException e_2) {
+                    System.out.println("Failed to reset table, retries left: " + (num_retries-i-1));
                 }
             }
 

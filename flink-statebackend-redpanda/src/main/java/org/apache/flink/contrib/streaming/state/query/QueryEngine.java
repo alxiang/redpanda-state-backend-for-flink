@@ -279,7 +279,7 @@ public class QueryEngine {
         for(int i=0; i<n; i++){
             deltas.add(checkpoint_timestamp - buffer_timestamps.get(i));
         }
-        Double mean_delta = deltas.stream().mapToDouble(a -> a).average().orElseThrow();
+        Double mean_delta = deltas.stream().mapToDouble(a -> a).average().orElse(0L);
         checkpoint_timestamp_deltas.add(mean_delta);
 
 

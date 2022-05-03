@@ -31,7 +31,7 @@ public class QueryEngineFlink {
 		env.enableCheckpointing(1000);
 
         final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.122.131:9192");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.122.132:9192");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "QuestDBConsumerFlink");
         props.put("session.timeout.ms", 30000);
         props.put("max.poll.interval.ms", 43200000);
