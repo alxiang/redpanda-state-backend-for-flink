@@ -49,6 +49,9 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
 
     @Override
     public void open(Configuration config) {
+
+        // todo: create jiffy files for table here
+
         ValueStateDescriptor<String> descriptor =
                 new ValueStateDescriptor<String>(
                         "QuestDB Records", // the state name
@@ -56,7 +59,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
 
         // Set up questdb
         String table_name = "wikitable";
-        final CairoConfiguration configuration = new DefaultCairoConfiguration("/home/alec/.questdb");
+        final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
 
         // CairoEngine is a resource manager for embedded QuestDB
         this.engine = new CairoEngine(configuration);

@@ -53,6 +53,27 @@ def launch_flink_job(args, flink_path, root_path):
    
     return proc
 
+def launch_flink_query_job(args, flink_path, root_path):
+
+    benchmark = args.benchmark
+    backend = args.backend
+    port = args.port
+    redpanda_async = args.redpanda_async
+    use_redpanda = args.use_redpanda
+    checkpointing_interval = args.checkpointing_interval
+
+    proc = subprocess.Popen([
+        f"{flink_path}/bin/flink",
+        "run",
+        "-m",
+        f"localhost:{port}",
+        "-c", 
+        f"org.apache.flink.contrib.streaming.state.query.QueryEngineFlink",
+        f"{root_path}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
+    ], stdout=subprocess.PIPE)
+   
+    return proc
+
 
 def run_experiment_trials(args):
 
@@ -128,6 +149,7 @@ def run_experiment_trials(args):
                 print(f"Submitting Job {t}")
                 procs.append(launch_flink_job(args, flink_path, root_path))
                 time.sleep(1) # slightly stagger job submission so no slot errors
+            procs.append(launch_flink_query_job(args, flink_path, root_path))
 
             for t, proc in enumerate(procs):
                 while proc.poll() is None:
@@ -269,11 +291,11 @@ def reset_kube_cluster(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('k', type=int)
-    parser.add_argument('benchmark')
-    parser.add_argument('backend')
-    parser.add_argument('redpanda_async', type=str, default='true')
-    parser.add_argument('jobs', type=int, default=1)
+    parser.add_argument('k', type=int, default=1, nargs='?')
+    parser.add_argument('benchmark', type=str, default='Wiki', nargs='?')
+    parser.add_argument('backend', type=str, default='redpanda', nargs='?')
+    parser.add_argument('redpanda_async', type=str, default='true', nargs='?')
+    parser.add_argument('jobs', type=int, default=1, nargs='?')
     parser.add_argument('use_redpanda', type=str, default='true', nargs='?')
     parser.add_argument('checkpointing_interval', type=str, default="10", nargs='?')
     parser.add_argument('port', type=str, default="8888", nargs='?')

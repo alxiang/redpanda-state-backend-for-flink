@@ -69,7 +69,7 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
                 consumerMetricGroup,
                 useMetrics);
 
-        final CairoConfiguration configuration = new DefaultCairoConfiguration("/home/alec/.questdb");
+        final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
 
         // CairoEngine is a resource manager for embedded QuestDB
         this.engine = new CairoEngine(configuration);

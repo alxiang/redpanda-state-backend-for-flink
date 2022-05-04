@@ -45,7 +45,7 @@ public class QueryEngineFlink {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                                     LongDeserializer.class.getName());
 
-        QueryFlinkKafkaConsumer<KafkaRecord> consumer = 
+        FlinkKafkaConsumer<KafkaRecord> consumer = 
             new QueryFlinkKafkaConsumer<KafkaRecord>
                 ("Wiki", 
                 new KafkaRecordSchema(),
