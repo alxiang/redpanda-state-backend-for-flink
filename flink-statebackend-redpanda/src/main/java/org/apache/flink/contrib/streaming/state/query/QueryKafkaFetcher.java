@@ -71,16 +71,16 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
                 consumerMetricGroup,
                 useMetrics);
 
-        final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
+        // final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
 
-        // CairoEngine is a resource manager for embedded QuestDB
-        this.engine = new CairoEngine(configuration);
+        // // CairoEngine is a resource manager for embedded QuestDB
+        // this.engine = new CairoEngine(configuration);
 
-        // Execution context is a conduit for passing SQL execution artefacts to the execution site
-        ctx = new SqlExecutionContextImpl(engine, 1);
-        compiler = new SqlCompiler(engine);
+        // // Execution context is a conduit for passing SQL execution artefacts to the execution site
+        // ctx = new SqlExecutionContextImpl(engine, 1);
+        // compiler = new SqlCompiler(engine);
 
-        table_name = table_name_;
+        // table_name = table_name_;
 
     //     try {
     //         Replace live with staging
