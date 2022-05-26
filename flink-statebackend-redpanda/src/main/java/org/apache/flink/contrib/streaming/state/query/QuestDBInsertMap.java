@@ -34,6 +34,11 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
     private TableWriter writer;
     private CairoEngine engine;
     private SqlCompiler compiler;
+    private String table_name = "wikitable";
+
+    public QuestDBInsertMap(String table_name_) {
+        table_name = table_name_;
+    }
 
     @Override
     public void flatMap(KafkaRecord record, Collector<Long> out) throws Exception {        
@@ -58,7 +63,6 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
                         TypeInformation.of(new TypeHint<String>() {})); // type information
 
         // Set up questdb
-        String table_name = "wikitable";
         final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
 
         // CairoEngine is a resource manager for embedded QuestDB
@@ -70,7 +74,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
 
         // drop the table if it exists and re-create it
         try {
-            this.compiler.compile("drop table "+table_name, ctx);
+            // this.compiler.compile("drop table "+table_name, ctx);
             this.compiler.compile("create table "+table_name+" (word string, count long, ts timestamp) timestamp(ts)", ctx);
         } catch (SqlException e) {
             e.printStackTrace();
@@ -78,6 +82,11 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long>{
 
         // This TableWriter instance has an exclusive (intra and interprocess) lock on the table
         this.writer = engine.getWriter(ctx.getCairoSecurityContext(), table_name, "testing");
+    }
+
+    @Override
+    public void close(){
+        this.writer.close();
     }
 }
 

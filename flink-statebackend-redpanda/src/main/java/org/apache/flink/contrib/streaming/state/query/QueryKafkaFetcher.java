@@ -52,7 +52,9 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
             long pollTimeout,
             MetricGroup subtaskMetricGroup,
             MetricGroup consumerMetricGroup,
-            boolean useMetrics)
+            boolean useMetrics,
+            String table_name_
+            )
             throws Exception {
         super(
                 sourceContext,
@@ -78,15 +80,17 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
         ctx = new SqlExecutionContextImpl(engine, 1);
         compiler = new SqlCompiler(engine);
 
-        try {
-            // Replace live with staging
-            this.compiler.compile(
-                "create table "+table_name+"_prod (word string, count long, ts timestamp) timestamp(ts)", 
-                ctx
-            );
-        } catch (SqlException e) {
-            e.printStackTrace();
-        }
+        table_name = table_name_;
+
+    //     try {
+    //         Replace live with staging
+    //         this.compiler.compile(
+    //             "create table "+table_name+"_prod (word string, count long, ts timestamp) timestamp(ts)", 
+    //             ctx
+    //         );
+    //     } catch (SqlException e) {
+    //         e.printStackTrace();
+    //     }
     }
 
     private void reset_table() throws SqlException{
@@ -110,30 +114,30 @@ public class QueryKafkaFetcher<T> extends KafkaFetcher<T> {
         */
 
         // drop the table if it exists and re-create it
-        try {
-            // Replace live with staging
-            this.compiler.compile(
-                "BEGIN TRAN\n"+
-                "DROP TABLE wikitable_prod;\n"+
-                "EXEC sp_rename wikitable, wikitable_prod;\n"+
-                "COMMIT", 
-                ctx
-            );
-        } catch (SqlException e) {
-            e.printStackTrace();
+        // try {
+        //     // Replace live with staging
+        //     this.compiler.compile(
+        //         "BEGIN TRAN\n"+
+        //         "DROP TABLE wikitable_prod;\n"+
+        //         "EXEC sp_rename wikitable, wikitable_prod;\n"+
+        //         "COMMIT", 
+        //         ctx
+        //     );
+        // } catch (SqlException e) {
+        //     e.printStackTrace();
 
-            // On error, need to reset the staging table back to the production table
-            int num_retries = 3;
-            for(int i = 0; i < num_retries; i++){
-                try {
-                    reset_table();
-                } catch (SqlException e_2) {
-                    System.out.println("Failed to reset table, retries left: " + (num_retries-i-1));
-                }
-            }
+        //     // On error, need to reset the staging table back to the production table
+        //     int num_retries = 3;
+        //     for(int i = 0; i < num_retries; i++){
+        //         try {
+        //             // reset_table();
+        //         } catch (SqlException e_2) {
+        //             System.out.println("Failed to reset table, retries left: " + (num_retries-i-1));
+        //         }
+        //     }
 
-            throw new RuntimeException();
-        }
+        //     throw new RuntimeException();
+        // }
         return state;
     }
 }

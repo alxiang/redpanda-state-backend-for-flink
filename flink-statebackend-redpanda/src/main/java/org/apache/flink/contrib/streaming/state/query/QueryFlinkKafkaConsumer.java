@@ -19,8 +19,16 @@ import java.util.Collections;
 import java.util.List;
 
 public class QueryFlinkKafkaConsumer<T> extends FlinkKafkaConsumer<T> {
+
+    String table_name;
+
     public QueryFlinkKafkaConsumer(String topic, DeserializationSchema<T> valueDeserializer, Properties props) {
         super(topic, valueDeserializer, props);
+    }
+
+    public QueryFlinkKafkaConsumer(String topic, DeserializationSchema<T> valueDeserializer, Properties props, String table_name_) {
+        super(topic, valueDeserializer, props);
+        table_name = table_name_;
     }
 
     public QueryFlinkKafkaConsumer(
@@ -62,6 +70,8 @@ public class QueryFlinkKafkaConsumer<T> extends FlinkKafkaConsumer<T> {
                 pollTimeout,
                 runtimeContext.getMetricGroup(),
                 consumerMetricGroup,
-                useMetrics);
+                useMetrics,
+                table_name
+                );
     }
 }

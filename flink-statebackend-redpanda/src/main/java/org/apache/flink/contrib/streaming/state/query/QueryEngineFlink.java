@@ -45,7 +45,9 @@ public class QueryEngineFlink {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                                     LongDeserializer.class.getName());
 
-        FlinkKafkaConsumer<KafkaRecord> consumer = 
+        String table_name = "wikitable" + Math.random();
+
+        QueryFlinkKafkaConsumer<KafkaRecord> consumer = 
             new QueryFlinkKafkaConsumer<KafkaRecord>
                 ("Wiki", 
                 new KafkaRecordSchema(),
@@ -57,7 +59,7 @@ public class QueryEngineFlink {
             .name("Kafka Source")
             .uid("Kafka Source");
 
-		source.flatMap(new QuestDBInsertMap())
+		source.flatMap(new QuestDBInsertMap(table_name))
             .addSink(new DiscardingSink<>())
 			.slotSharingGroup("sink");
 
