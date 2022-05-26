@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flink-taskmanager
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flink
@@ -51,7 +51,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "apt install -y dstat; git clone git@github.com:alxiang/redpanda-state-backend-for-flink.git && chown -R flink:flink redpanda-state-backend-for-flink; chown -R flink:flink /tmp/BackendChronicleMaps; cd jiffy && storaged & /opt/flink/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start -d /opt/flink/.questdb & sleep 3 && watch -n 1 'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb' &"]            
+              command: ["/bin/sh", "-c", "apt install -y dstat; git clone git@github.com:alxiang/redpanda-state-backend-for-flink.git && chown -R flink:flink redpanda-state-backend-for-flink; chown -R flink:flink /tmp/BackendChronicleMaps; cd jiffy && storaged & su - flink -c '/opt/flink/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start -d /opt/flink/.questdb' & sleep 3 && watch -n 1 'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb' &"]            
               # command: ["/bin/sh", "-c", "chown -R flink:flink resources && cd jiffy && storaged &"]            
       
       volumes:

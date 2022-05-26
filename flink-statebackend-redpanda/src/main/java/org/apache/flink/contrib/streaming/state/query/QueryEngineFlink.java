@@ -39,7 +39,7 @@ public class QueryEngineFlink {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                                     LongDeserializer.class.getName());
 
-        String table_name = "wikitable" + Math.random();
+        String table_name = "wikitable";
 
         QueryFlinkKafkaConsumer<KafkaRecord> consumer = 
             new QueryFlinkKafkaConsumer<KafkaRecord>

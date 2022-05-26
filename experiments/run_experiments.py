@@ -148,7 +148,7 @@ def run_experiment_trials(args):
             procs = []
             for t in range(jobs):
                 print(f"Submitting Job {t}")
-                procs.append(launch_flink_job(args, flink_path, root_path))
+                # procs.append(launch_flink_job(args, flink_path, root_path))
                 time.sleep(1) # slightly stagger job submission so no slot errors
             procs.append(launch_flink_query_job(args, flink_path, root_path))
 
