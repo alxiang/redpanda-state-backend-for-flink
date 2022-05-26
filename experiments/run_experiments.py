@@ -70,6 +70,7 @@ def launch_flink_query_job(args, flink_path, root_path):
         "-c", 
         f"org.apache.flink.contrib.streaming.state.query.QueryEngineFlink",
         f"{root_path}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
+        "192.168.122.132", # master machine address
     ], stdout=subprocess.PIPE)
    
     return proc

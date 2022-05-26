@@ -14,7 +14,6 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Pattern;
 import java.util.Collections;
 import java.util.List;
 

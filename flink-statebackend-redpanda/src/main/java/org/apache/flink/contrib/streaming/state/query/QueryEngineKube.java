@@ -3,9 +3,6 @@ package org.apache.flink.contrib.streaming.state.query;
 // Jiffy Client imports
 import jiffy.JiffyClient;
 import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 
 // Redpanda consumer imports
 import org.apache.kafka.clients.consumer.*;
@@ -14,10 +11,9 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.LongSerializer; // rcord key serializer
+import org.apache.kafka.common.serialization.LongSerializer; // record key serializer
 import org.apache.kafka.common.serialization.StringSerializer; // record value serializer
 
 // QuestDB imports
@@ -25,17 +21,11 @@ import io.questdb.cairo.CairoConfiguration;
 import io.questdb.cairo.CairoEngine;
 import io.questdb.cairo.DefaultCairoConfiguration;
 import io.questdb.cairo.TableWriter;
-import io.questdb.cairo.sql.PageFrame;
-import io.questdb.cairo.sql.PageFrameCursor;
 import io.questdb.griffin.SqlCompiler;
 import io.questdb.griffin.SqlException;
 import io.questdb.griffin.SqlExecutionContextImpl;
-import io.questdb.std.Os;
 
-import java.net.UnknownHostException;
 import java.util.Collections;
-import org.apache.commons.io.FileUtils;
-import java.io.File;
 import java.util.Properties;
 
 
@@ -114,7 +104,6 @@ public class QueryEngineKube {
         
         this.producer.send(record);
     }
-
 
     private void createConsumer() {
         final Properties props = new Properties();

@@ -39,9 +39,6 @@ public class WikiBenchmark {
 			}
 		}
 
-		// env.enableCheckpointing(10);
-		// env.getCheckpointConfig().setMinPauseBetweenCheckpoints(3);
-
 		// command line options
 		String TOPIC = "Wiki";
 		boolean async = false;
@@ -70,22 +67,12 @@ public class WikiBenchmark {
 		}
 
 		String filePath = "file:///opt/flink/redpanda-state-backend-for-flink/wikipedia/wiki-100k.txt";
-		// TextInputFormat format = new TextInputFormat(new Path(filePath));
-        // format.setCharsetName("UTF-8");
 
-		// // configure source
-        // DataStreamSource<String> source = env.readFile(
-		// 	format,
-		// 	filePath,
-		// 	FileProcessingMode.PROCESS_CONTINUOUSLY,
-		// 	60000l,
-		// 	BasicTypeInfo.STRING_TYPE_INFO
-		// );
 		DataStreamSource<String> source = env.readTextFile(filePath);
 
         DataStream<Tuple2<String, Long>> tokenized = source.flatMap(new Tokenizer());
 
-		System.out.println("[WIKI BENCHMARK] Set checkpointing interval to: " + checkpointing_interval);
+		// System.out.println("[WIKI BENCHMARK] Set checkpointing interval to: " + checkpointing_interval);
 		DataStream<Tuple2<String, Long>> mapper = tokenized.keyBy(record -> record.f0)
 				.flatMap(new WordCountMap(TOPIC, async, directory_daemon_address, redpanda, checkpointing_interval)) 
 				.slotSharingGroup("map");

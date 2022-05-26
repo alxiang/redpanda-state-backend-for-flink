@@ -1,28 +1,22 @@
 package org.apache.flink.contrib.streaming.state.query;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
-import org.apache.flink.streaming.api.functions.source.FileProcessingMode;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
-import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.util.Properties;
 
-import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.io.TextInputFormat;
-import org.apache.flink.api.java.tuple.Tuple2;
-
 public class QueryEngineFlink {
       
     public static void main(String[] args) throws Exception {
+
+        String directory_daemon_address = "127.0.0.1";
+
+        if(args.length >= 1){
+			directory_daemon_address = args[0];
+		}	
 
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -59,7 +53,7 @@ public class QueryEngineFlink {
             .name("Kafka Source")
             .uid("Kafka Source");
 
-		source.flatMap(new QuestDBInsertMap(table_name))
+		source.flatMap(new QuestDBInsertMap(table_name, directory_daemon_address))
             .addSink(new DiscardingSink<>())
 			.slotSharingGroup("sink");
 
