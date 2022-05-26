@@ -36,15 +36,6 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
         table_name = table_name_;
         directory_daemon_address = directory_daemon_address_;
 
-        connectToJiffy();
-
-        // Ask Jiffy for a memory mapped file for the parquet file
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/count.d");
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/ts.d");
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/word.d");
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/word.i");
-
-        System.out.println("JiffyClient and Jiffy files for table successfully initialized.");
     }
 
     public void snapshotState(FunctionSnapshotContext context) throws Exception {
@@ -68,6 +59,18 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
 
     @Override
     public void open(Configuration config) {
+
+        // this logic with non-serializable data types needs to 
+        // be in the open and close methods of the flatmap
+        connectToJiffy();
+
+        // Ask Jiffy for a memory mapped file for the parquet file
+        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/count.d");
+        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/ts.d");
+        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/word.d");
+        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/word.i");
+
+        System.out.println("JiffyClient and Jiffy files for table successfully initialized.");
 
         // Set up questdb
         final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
