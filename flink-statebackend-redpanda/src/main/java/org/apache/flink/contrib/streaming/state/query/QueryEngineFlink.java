@@ -1,11 +1,17 @@
 package org.apache.flink.contrib.streaming.state.query;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.TopicPartition;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class QueryEngineFlink {
@@ -41,19 +47,24 @@ public class QueryEngineFlink {
 
         String table_name = "wikitable";
 
-        QueryFlinkKafkaConsumer<KafkaRecord> consumer = 
-            new QueryFlinkKafkaConsumer<KafkaRecord>
-                ("Wiki", 
-                new KafkaRecordSchema(),
-                props
-            );
+        HashMap<TopicPartition, Long> partition_map = new HashMap<TopicPartition,Long>();
+        partition_map.put(
+            new TopicPartition("Wiki", 0), 
+            500L
+        );
 
-		DataStream<KafkaRecord> source = env
-            .addSource(consumer)
-            .name("Kafka Source")
-            .uid("Kafka Source");
+        KafkaSource<KafkaRecord> source = KafkaSource
+            .<KafkaRecord>builder()
+            .setBootstrapServers("192.168.122.132:9192")
+            .setGroupId("QuestDBConsumerFlink")
+            .setTopics("Wiki")
+            .setDeserializer(new KafkaRecordSchema())
+            .setStartingOffsets(OffsetsInitializer.earliest())
+            .setBounded(OffsetsInitializer.offsets(partition_map))
+            .build();
 
-		source.flatMap(new QuestDBInsertMap(table_name, directory_daemon_address))
+        env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
+            .flatMap(new QuestDBInsertMap(table_name, directory_daemon_address))
             .addSink(new DiscardingSink<>())
 			.slotSharingGroup("sink");
 
