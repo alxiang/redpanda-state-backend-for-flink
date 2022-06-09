@@ -31,6 +31,8 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
     private String table_name = "wikitable";
     JiffyClient client;
     String directory_daemon_address;
+    Long start_time;
+    Long time_now;
 
     public QuestDBInsertMap(String table_name_, String directory_daemon_address_) {
         table_name = table_name_;
@@ -40,6 +42,11 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
 
     public void snapshotState(FunctionSnapshotContext context) throws Exception {
         writer.commit();
+        
+        if(start_time == null){
+            start_time = System.currentTimeMillis();
+        }
+        time_now = System.currentTimeMillis();
     }
 
     public void initializeState(FunctionInitializationContext context) throws Exception {
@@ -97,6 +104,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
     @Override
     public void close(){
         this.writer.close();
+        System.out.println("[FLINK_QUESTDB] Runtime: " + (time_now - start_time));
     }
 
     private void connectToJiffy() {
