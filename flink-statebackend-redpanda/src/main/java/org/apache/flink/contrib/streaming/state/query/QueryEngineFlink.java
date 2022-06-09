@@ -50,7 +50,7 @@ public class QueryEngineFlink {
         HashMap<TopicPartition, Long> partition_map = new HashMap<TopicPartition,Long>();
         partition_map.put(
             new TopicPartition("Wiki", 0), 
-            500L
+            5436759L
         );
 
         KafkaSource<KafkaRecord> source = KafkaSource
