@@ -41,7 +41,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
     }
 
     public void snapshotState(FunctionSnapshotContext context) throws Exception {
-        Long snapshot_start_time = System.nanoTime()
+        Long snapshot_start_time = System.nanoTime();
         writer.commit();
         
         if(start_time == null){
