@@ -8,7 +8,7 @@ ROOTPATH = "/home/alec/flink-1.13.2/redpanda-state-backend-for-flink"
 
 class Job(NamedTuple):
     job_type: str
-    proc: subprocess.Popen[bytes]
+    proc: subprocess.CompletedProcess
 
 #Mapping of a benchmark to its file name, edit whenever creating a new benchmark
 BENCHMARK_MAP = {

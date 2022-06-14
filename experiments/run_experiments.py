@@ -58,13 +58,10 @@ def run_experiment_trials(args):
                     
                 text_output = job.proc.stdout.read().decode("utf-8")
             
-                if(job.job_type == "producer"):
-                    runtime_tag = "Job Runtime: "
-                elif(job.job_type == "consumer"):
-                    runtime_tag = "[FLINK_QUESTDB] Runtime: "
+                runtime_tag = "Job Runtime: "
 
                 start_ind = text_output.rfind(runtime_tag)
-                if start_ind < -1: 
+                if start_ind == -1: 
                     print("Trial resulted in error")
                     print(text_output)
 
@@ -95,7 +92,7 @@ def run_experiment_trials(args):
 
             # get the latency from kubernetes logs
             if(backend == "redpanda"):
-                tags = ["[SNAPSHOT_TIME]"]
+                tags = ["[SNAPSHOT_TIME]", "[FLINK_QUESTDB_RUNTIME]"]
                 logged_tag_values = k8s.get_tags_from_pod_logs(
                     pods, 
                     start_time, 
