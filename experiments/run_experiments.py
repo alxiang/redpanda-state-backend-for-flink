@@ -87,7 +87,8 @@ def run_experiment_trials(args):
                         "type": job.job_type, 
                         "backend": backend, 
                         "benchmark": benchmark,
-                        "redpanda_async": redpanda_async
+                        "redpanda_async": redpanda_async,
+                        "checkpointing_interval": args.checkpointing_interval
                     })
 
             # get the latency from kubernetes logs
@@ -119,13 +120,19 @@ def run_experiment_trials(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('k', type=int, default=1, nargs='?') # number of runs
+    parser.add_argument('checkpointing_interval', type=str, default="1000", nargs='?')
     parser.add_argument('benchmark', type=str, default='Wiki', nargs='?')
-    parser.add_argument('backend', type=str, default='redpanda', nargs='?')
-    parser.add_argument('redpanda_async', type=str, default='true', nargs='?')
+
     parser.add_argument('producers', type=int, default=1, nargs='?')
     parser.add_argument('consumers', type=int, default=1, nargs='?')
+
+    # to implement
+    parser.add_argument('redpanda_async', type=str, default='true', nargs='?')
+
+    # deprecated
+    parser.add_argument('backend', type=str, default='redpanda', nargs='?')
     parser.add_argument('use_redpanda', type=str, default='true', nargs='?')
-    parser.add_argument('checkpointing_interval', type=str, default="10", nargs='?')
+
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()
 

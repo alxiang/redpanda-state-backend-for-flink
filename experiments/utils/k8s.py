@@ -42,7 +42,7 @@ def get_tags_from_pod_logs(pods, start_time, tags):
         for log_line in log_as_list:
 
             for tag in tags:
-                if(x.find(tag) != -1):
+                if(log_line.find(tag) != -1):
                     _, tag_val = log_line.split(" ")
                     res_nested[tag].append(float(tag_val))
 
