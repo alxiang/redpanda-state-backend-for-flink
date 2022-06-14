@@ -5,8 +5,8 @@ import json
 import time
 import os
 
-from experiments import redpanda, k8s
-from experiments.flink import BENCHMARK_MAP, ROOTPATH, launch_flink_producer_job, launch_flink_consumer_job
+from utils import redpanda, k8s
+from utils.flink import BENCHMARK_MAP, ROOTPATH, launch_flink_producer_job, launch_flink_consumer_job
 
 today_folder = date.today().strftime("%m-%d-%Y")
 
