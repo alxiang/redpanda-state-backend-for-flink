@@ -41,12 +41,16 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
     }
 
     public void snapshotState(FunctionSnapshotContext context) throws Exception {
+        Long snapshot_start_time = System.nanoTime()
         writer.commit();
         
         if(start_time == null){
             start_time = System.currentTimeMillis();
         }
         time_now = System.currentTimeMillis();
+        Long snapshot_end_time = System.nanoTime();
+        System.out.println("[SNAPSHOT_TIME]: " + (snapshot_end_time - snapshot_start_time));
+        System.out.println("[FLINK_QUESTDB] Runtime: " + (time_now - start_time));
     }
 
     public void initializeState(FunctionInitializationContext context) throws Exception {
