@@ -50,7 +50,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
         time_now = System.currentTimeMillis();
         Long snapshot_end_time = System.nanoTime();
         System.out.println("[SNAPSHOT_TIME]: " + (snapshot_end_time - snapshot_start_time));
-        System.out.println("[FLINK_QUESTDB] Runtime: " + (time_now - start_time) + "ms");
+        System.out.println("[FLINK_QUESTDB_RUNTIME]: " + (time_now - start_time));
     }
 
     public void initializeState(FunctionInitializationContext context) throws Exception {

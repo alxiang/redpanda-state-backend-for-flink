@@ -19,16 +19,20 @@ public class QueryEngineFlink {
     public static void main(String[] args) throws Exception {
 
         String directory_daemon_address = "127.0.0.1";
+        Long checkpointing_interval = 1000L;
 
         if(args.length >= 1){
 			directory_daemon_address = args[0];
 		}	
+        if(args.length >= 2){
+            checkpointing_interval = Long.valueOf(args[1]);
+        }
 
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.getConfig().setParallelism(1);
 		env.disableOperatorChaining();
-		env.enableCheckpointing(1000);
+		env.enableCheckpointing(checkpointing_interval);
 
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.122.132:9192");
