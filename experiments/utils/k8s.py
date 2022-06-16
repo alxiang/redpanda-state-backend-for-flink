@@ -1,3 +1,4 @@
+from cmath import e
 import subprocess
 from collections import defaultdict
 
@@ -51,3 +52,28 @@ def get_tags_from_pod_logs(pods, start_time, tags):
                 res[tag].append(res_nested[tag])
 
     return res
+
+def reset_kube_cluster():
+    print("Resetting the kube cluster")
+
+    for task_executor in get_kube_pods():
+        output = subprocess.run([
+                'kubectl',
+                'exec',
+                task_executor,
+                '--'
+                'rm -r .questdb/wikitable'
+            ], capture_output=True)
+        print(task_executor, output)
+
+        output = subprocess.run([
+                'kubectl',
+                'exec',
+                task_executor,
+                '--'
+                'rm -r .questdb/wikitable.lock'
+            ], capture_output=True)
+        print(task_executor, output)
+
+    print("Cluster has been reset")
+    return

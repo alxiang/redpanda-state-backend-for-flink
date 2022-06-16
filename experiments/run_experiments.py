@@ -8,6 +8,7 @@ import os
 from utils import redpanda, k8s
 from utils.flink import BENCHMARK_MAP, ROOTPATH, launch_flink_producer_job, launch_flink_consumer_job
 
+
 today_folder = date.today().strftime("%m-%d-%Y")
 
 def run_experiment_trials(args):
@@ -26,6 +27,8 @@ def run_experiment_trials(args):
         result = []
         for i in range(k):
             print(f"Starting Trial {i}")
+
+            k8s.reset_kube_cluster()
             
             if(backend == "redpanda" and redpanda_async == "true" and k > 1):
                 time.sleep(5) # give time for the prev thread to timeout
