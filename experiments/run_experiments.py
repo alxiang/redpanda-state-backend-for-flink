@@ -11,6 +11,8 @@ from utils.flink import BENCHMARK_MAP, ROOTPATH, launch_flink_producer_job, laun
 
 today_folder = date.today().strftime("%m-%d-%Y")
 
+CONSUMER_ONLY = True
+
 def run_experiment_trials(args):
 
     k = args.k
@@ -25,29 +27,38 @@ def run_experiment_trials(args):
     print(f"[{current_time}]: Running experiment {backend} with {benchmark} benchmark")
     with open(filename, mode='w+') as file:
         result = []
+
+        if(CONSUMER_ONLY):
+            job = launch_flink_producer_job(args)
+            while job.proc.poll() is None:
+                time.sleep(1)
+            print("Populated data for the consumers to consume")
+
+
         for i in range(k):
             print(f"Starting Trial {i}")
 
             k8s.reset_kube_cluster()
             
-            if(backend == "redpanda" and redpanda_async == "true" and k > 1):
-                time.sleep(5) # give time for the prev thread to timeout
+            # if(backend == "redpanda" and redpanda_async == "true" and k > 1):
+            #     time.sleep(5) # give time for the prev thread to timeout
             
             # Get kube pods and start time to check the logs later
             pods = k8s.get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
 
             # clear the redpanda topic (if using redpanda backend)
-            if(backend == "redpanda"):
+            if(not CONSUMER_ONLY and backend == "redpanda"):
                 redpanda.delete_topic(benchmark)
                 redpanda.create_topic(benchmark)
 
             jobs = []
 
-            for i in range(producers):
-                print(f"Submitting Producer Job {i}")
-                jobs.append(launch_flink_producer_job(args))
-                time.sleep(1) # slightly stagger job submission so no slot errors
+            if(not CONSUMER_ONLY):
+                for i in range(producers):
+                    print(f"Submitting Producer Job {i}")
+                    jobs.append(launch_flink_producer_job(args))
+                    time.sleep(1) # slightly stagger job submission so no slot errors
 
             for i in range(consumers):
                 print(f"Submitting Consumer Job {i}")
