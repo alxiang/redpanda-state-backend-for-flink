@@ -62,7 +62,9 @@ def reset_kube_cluster():
                 'exec',
                 task_executor,
                 '--'
-                'rm -r .questdb/wikitable'
+                'rm',
+                '-r',
+                '.questdb/wikitable'
             ], capture_output=True)
         print(task_executor, output)
 
@@ -70,8 +72,10 @@ def reset_kube_cluster():
                 'kubectl',
                 'exec',
                 task_executor,
-                '-- '
-                'rm -r .questdb/wikitable.lock'
+                '--'
+                'rm'
+                '-r' 
+                '.questdb/wikitable.lock'
             ], capture_output=True)
         print(task_executor, output)
 
