@@ -56,7 +56,7 @@ def launch_flink_consumer_job(args):
         f"{ROOTPATH}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
         "192.168.122.132", # master machine address
         args.checkpointing_interval,
-        args.producers
+        str(args.producers)
     ], stdout=subprocess.PIPE)
    
     return Job("consumer", proc)

@@ -23,7 +23,7 @@ def run_experiment_trials(args):
     consumers = args.consumers
 
     current_time = datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-    filename = f"{ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}_{current_time}_{backend}_{benchmark}.json"
+    filename = f"{ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}x{args.consumers}_{current_time}_{backend}_{benchmark}.json"
     print(f"[{current_time}]: Running experiment {backend} with {benchmark} benchmark")
     with open(filename, mode='w+') as file:
         result = []
