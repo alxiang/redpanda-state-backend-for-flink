@@ -20,7 +20,7 @@ def run_experiment_trials(args):
     backend = args.backend
     redpanda_async = args.redpanda_async
     producers = args.producers
-    consumers = args.producers
+    consumers = args.consumers
 
     current_time = datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
     filename = f"{ROOTPATH}/experiments/{today_folder}/{current_time}_{backend}_{benchmark}.json"
