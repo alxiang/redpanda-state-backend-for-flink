@@ -29,9 +29,15 @@ def run_experiment_trials(args):
         result = []
 
         if(CONSUMER_ONLY):
-            job = launch_flink_producer_job(args)
-            while job.proc.poll() is None:
+            jobs = []
+            for i in range(producers):
+                print(f"Submitting Producer Job {i}")
+                jobs.append(launch_flink_producer_job(args))
                 time.sleep(1)
+
+            for job in jobs:
+                while job.proc.poll() is None:
+                    time.sleep(0.1)
             print("Populated data for the consumers to consume")
 
 

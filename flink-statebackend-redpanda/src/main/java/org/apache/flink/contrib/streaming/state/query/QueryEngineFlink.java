@@ -20,12 +20,15 @@ public class QueryEngineFlink {
 
         String directory_daemon_address = "127.0.0.1";
         Long checkpointing_interval = 1000L;
+        Long num_producers = 1L;
 
         if(args.length >= 1){
 			directory_daemon_address = args[0];
 		}	
         if(args.length >= 2){
             checkpointing_interval = Long.valueOf(args[1]);
+        }if(args.length >= 3){
+            num_producers = Long.valueOf(args[2]);
         }
 
 		// set up the streaming execution environment
@@ -54,7 +57,7 @@ public class QueryEngineFlink {
         HashMap<TopicPartition, Long> partition_map = new HashMap<TopicPartition,Long>();
         partition_map.put(
             new TopicPartition("Wiki", 0), 
-            5436759L
+            5436759L*num_producers
         );
 
         KafkaSource<KafkaRecord> source = KafkaSource
