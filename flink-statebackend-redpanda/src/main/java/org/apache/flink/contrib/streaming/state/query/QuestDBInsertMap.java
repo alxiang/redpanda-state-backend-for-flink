@@ -64,7 +64,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
         String key = record.key;
         Long value = record.value;
 
-        TableWriter.Row row = writer.newRow(System.nanoTime());
+        TableWriter.Row row = writer.newRow((long) (System.nanoTime()*0.000001));
         row.putStr(0, key);
         row.putLong(1, value);
         row.append();
