@@ -54,7 +54,9 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
     }
 
     public void initializeState(FunctionInitializationContext context) throws Exception {
-
+        if(this.writer != null){
+            this.writer.rollback();
+        }
     }       
 
     @Override
@@ -62,7 +64,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
         String key = record.key;
         Long value = record.value;
 
-        TableWriter.Row row = writer.newRow(record.timestamp);
+        TableWriter.Row row = writer.newRow(System.nanoTime());
         row.putStr(0, key);
         row.putLong(1, value);
         row.append();
