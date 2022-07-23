@@ -1,6 +1,7 @@
 import argparse
 import datetime
 from datetime import timezone, date
+from doctest import DocTestFailure
 import json
 import time
 import os
@@ -145,6 +146,7 @@ def main():
 
     parser.add_argument('producers', type=int, default=1, nargs='?')
     parser.add_argument('consumers', type=int, default=1, nargs='?')
+    parser.add_argument('master', type=str, default="", nargs="?")
 
     # to implement
     parser.add_argument('redpanda_async', type=str, default='true', nargs='?')

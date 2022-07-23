@@ -37,21 +37,6 @@ public class QueryEngineFlink {
 		env.disableOperatorChaining();
 		env.enableCheckpointing(checkpointing_interval);
 
-        final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.122.132:9192");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "QuestDBConsumerFlink");
-        props.put("session.timeout.ms", 30000);
-        props.put("max.poll.interval.ms", 43200000);
-        props.put("request.timeout.ms", 43205000);
-        props.put("max.poll.records", 250000);
-        props.put("fetch.max.bytes", 52428800);
-        props.put("max.partition.fetch.bytes", 52428800);
-        props.put("auto.offset.reset", "earliest");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                                    StringDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                                    LongDeserializer.class.getName());
-
         String table_name = "wikitable";
 
         HashMap<TopicPartition, Long> partition_map = new HashMap<TopicPartition,Long>();
@@ -62,7 +47,7 @@ public class QueryEngineFlink {
 
         KafkaSource<KafkaRecord> source = KafkaSource
             .<KafkaRecord>builder()
-            .setBootstrapServers("192.168.122.132:9192")
+            .setBootstrapServers(directory_daemon_address+":9192")
             .setGroupId("QuestDBConsumerFlink")
             .setTopics("Wiki")
             .setDeserializer(new KafkaRecordSchema())
