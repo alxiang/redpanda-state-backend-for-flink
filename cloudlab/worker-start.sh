@@ -5,4 +5,4 @@ curl -sL https://gist.githubusercontent.com/alexellis/e8bbec45c75ea38da5547746c0
 sudo systemctl stop redpanda
 
 # allow the master to ssh into us
-cat /local/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+cat /local/flink-1.13.2/redpanda-state-backend-for-flink/cloudlab/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
