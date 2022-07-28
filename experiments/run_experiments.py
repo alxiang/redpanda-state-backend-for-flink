@@ -17,13 +17,11 @@ def run_experiment_trials(args):
 
     k = args.k
     benchmark = args.benchmark
-    backend = args.backend
-    redpanda_async = args.redpanda_async
     producers = args.producers
     consumers = args.consumers
 
     current_time = datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-    filename = f"{ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}x{args.consumers}_{current_time}_{backend}_{benchmark}.json"
+    filename = f"{ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}x{args.consumers}_{current_time}_{benchmark}.json"
     print(f"[{current_time}]: Running experiment {backend} with {benchmark} benchmark")
     with open(filename, mode='w+') as file:
         result = []
@@ -142,13 +140,6 @@ def main():
     parser.add_argument('producers', type=int, default=1, nargs='?')
     parser.add_argument('consumers', type=int, default=1, nargs='?')
     parser.add_argument('master', type=str, default="", nargs="?")
-
-    # to implement
-    parser.add_argument('redpanda_async', type=str, default='true', nargs='?')
-
-    # deprecated
-    parser.add_argument('backend', type=str, default='redpanda', nargs='?')
-    parser.add_argument('use_redpanda', type=str, default='true', nargs='?')
 
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()

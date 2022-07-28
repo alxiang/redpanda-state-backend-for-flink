@@ -7,7 +7,7 @@ import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.kafka.common.TopicPartition;
 
 import utils.KafkaRecord;
-import utils.KafkaRecordSchema;
+import utils.TupleRecordDeserializationSchema;
 
 import java.util.HashMap;
 
@@ -47,7 +47,7 @@ public class QueryEngineFlink {
             .setBootstrapServers(directory_daemon_address+":9192")
             .setGroupId("QuestDBConsumerFlink")
             .setTopics("Wiki")
-            .setDeserializer(new KafkaRecordSchema())
+            .setDeserializer(new TupleRecordDeserializationSchema())
             .setStartingOffsets(OffsetsInitializer.earliest())
             .setBounded(OffsetsInitializer.offsets(partition_map))
             .build();

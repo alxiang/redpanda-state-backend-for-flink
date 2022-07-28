@@ -1,3 +1,5 @@
+package applications;
+
 import java.sql.*;
 import java.util.Properties;
 
