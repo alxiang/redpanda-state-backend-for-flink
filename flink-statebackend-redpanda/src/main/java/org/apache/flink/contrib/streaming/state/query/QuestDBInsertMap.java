@@ -4,9 +4,6 @@ import jiffy.JiffyClient;
 
 import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 import org.apache.flink.util.Collector;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.*;
 

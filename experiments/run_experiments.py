@@ -1,7 +1,6 @@
 import argparse
 import datetime
 from datetime import timezone, date
-from doctest import DocTestFailure
 import json
 import time
 import os
@@ -47,9 +46,6 @@ def run_experiment_trials(args):
 
             k8s.reset_kube_cluster()
             
-            # if(backend == "redpanda" and redpanda_async == "true" and k > 1):
-            #     time.sleep(5) # give time for the prev thread to timeout
-            
             # Get kube pods and start time to check the logs later
             pods = k8s.get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
@@ -71,7 +67,6 @@ def run_experiment_trials(args):
                 print(f"Submitting Consumer Job {i}")
                 jobs.append(launch_flink_consumer_job(args))
                 time.sleep(1) # slightly stagger job submission so no slot errors
-            
 
             for job in jobs:
                 while job.proc.poll() is None:
