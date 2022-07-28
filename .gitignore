@@ -10,7 +10,10 @@ scalastyle-output.xml
 .version.properties
 filter.properties
 logs.zip
-target
+.classpath
+.project
+.settings/
+target/
 tmp
 *.class
 *.iml
