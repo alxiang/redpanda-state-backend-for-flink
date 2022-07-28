@@ -10,7 +10,7 @@ scalastyle-output.xml
 .version.properties
 filter.properties
 logs.zip
-**/target/**
+# target
 tmp
 *.class
 *.iml
@@ -55,3 +55,4 @@ tools/flink
 tools/flink-*
 tools/releasing/release
 tools/japicmp-output
+*.ipynb_checkpoints
