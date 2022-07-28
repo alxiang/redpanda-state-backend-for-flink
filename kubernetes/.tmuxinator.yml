@@ -10,8 +10,8 @@ windows:
       - kube-launch:
         - ./kube-teardown.sh; ./kube-startup.sh
       - directory-daemon:
-        - cd ~/jiffy && directoryd
-      - storage-daemon:
-        - cd ~/jiffy && storaged
+        - cd /local/jiffy && directoryd
+      # - storage-daemon:
+      #   - cd /local/jiffy && storaged
       - redpanda:
         - systemctl status redpanda
