@@ -1,15 +1,13 @@
-from cmath import e
 import subprocess
 from collections import defaultdict
 
-import kubernetes.client
 from kubernetes import client, config
 
 def get_kube_pods():
 
     config.load_kube_config("/home/alec/.kube/config")
 
-    v1 = kubernetes.client.CoreV1Api()
+    v1 = client.CoreV1Api()
 
     pods = []
     ret = v1.list_pod_for_all_namespaces(watch=False)
