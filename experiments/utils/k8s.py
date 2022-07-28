@@ -1,11 +1,12 @@
 import subprocess
 from collections import defaultdict
+from experiments.utils.flink import BASE
 
 from kubernetes import client, config
 
 def get_kube_pods():
 
-    config.load_kube_config("/home/alec/.kube/config")
+    config.load_kube_config(f"{BASE}/.kube/config")
 
     v1 = client.CoreV1Api()
 

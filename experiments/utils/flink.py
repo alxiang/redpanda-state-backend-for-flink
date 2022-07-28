@@ -2,9 +2,9 @@ import subprocess
 from typing import NamedTuple
 
 #Assumes flink redpanda-state-backend-for-flink is in flink folder. If it isn't, can set flink path manually
-# flink_path = pathlib.Path(__file__).parent.parent.parent.absolute()
-FLINKPATH = "/home/alec/flink-1.13.2"
-ROOTPATH = "/home/alec/flink-1.13.2/redpanda-state-backend-for-flink"
+BASE = "/local" # /home/alec
+FLINKPATH = f"{BASE}/flink-1.13.2"
+ROOTPATH = f"{BASE}/flink-1.13.2/redpanda-state-backend-for-flink"
 
 class Job(NamedTuple):
     job_type: str
