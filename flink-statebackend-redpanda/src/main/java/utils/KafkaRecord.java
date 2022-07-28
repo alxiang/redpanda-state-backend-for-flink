@@ -1,4 +1,4 @@
-package org.apache.flink.contrib.streaming.state.query;
+package utils;
 
 public class KafkaRecord {
     public String key;

@@ -1,8 +1,9 @@
-package org.apache.flink.contrib.streaming.state.query;
+package etl;
 
 import jiffy.JiffyClient;
+import utils.InetAddressLocalHostUtil;
+import utils.KafkaRecord;
 
-import org.apache.flink.contrib.streaming.state.utils.InetAddressLocalHostUtil;
 import org.apache.flink.util.Collector;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.*;

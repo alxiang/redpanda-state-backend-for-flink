@@ -1,4 +1,4 @@
-package org.apache.flink.contrib.streaming.state.query;
+package utils;
 import org.apache.flink.util.Collector;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.LongDeserializer;

@@ -1,4 +1,4 @@
-package org.apache.flink.contrib.streaming.state.testing;
+package utils;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;

@@ -1,10 +1,13 @@
-package org.apache.flink.contrib.streaming.state.query;
+package etl;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.kafka.common.TopicPartition;
+
+import utils.KafkaRecord;
+import utils.KafkaRecordSchema;
 
 import java.util.HashMap;
 

@@ -1,4 +1,4 @@
-package org.apache.flink.contrib.streaming.state.testing;
+package input;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
