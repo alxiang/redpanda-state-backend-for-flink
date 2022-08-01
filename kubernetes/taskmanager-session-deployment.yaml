@@ -41,8 +41,6 @@ spec:
           mountPath: /opt/flink/conf/
         - name: flink-input-data
           mountPath: /opt/flink/resources/
-        - name: dshm
-          mountPath: /tmp/BackendChronicleMaps/
         securityContext:
           privileged: true
           runAsUser: 0  # refers to user _flink_ from official flink image, change if necessary
@@ -61,10 +59,6 @@ spec:
             path: flink-conf.yaml
           - key: log4j-console.properties
             path: log4j-console.properties
-
       - name: flink-input-data
         hostPath:
-          path: /home/alec/flink-1.13.2/redpanda-state-backend-for-flink/wikipedia/
-      - name: dshm
-        emptyDir: 
-          medium: Memory
+          path: /local/flink-1.13.2/redpanda-state-backend-for-flink/wikipedia/
