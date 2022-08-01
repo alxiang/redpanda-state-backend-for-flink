@@ -13,4 +13,5 @@ NUM_NODES=$(($(wc -l < /etc/hosts)-1))
 for ((i = 1; i < NUM_NODES; i++)); do
   ssh -o StrictHostKeyChecking=no alxiang@node$i bash /local/flink-1.13.2/redpanda-state-backend-for-flink/cloudlab/worker-start.sh
   ssh -o StrictHostKeyChecking=no alxiang@node$i -t "sudo $JOIN_COMMAND"
+  ssh -o StrictHostKeyChecking=no alxiang@node$i -t "sudo systemctl restart containerd"
 done 
