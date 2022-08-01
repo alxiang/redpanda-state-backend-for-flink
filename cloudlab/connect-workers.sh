@@ -6,7 +6,7 @@ chmod 600 ~/.ssh/id_rsa
 
 # Joins the workers to the master kubelet
 # Generate and replace comand with: sudo kubeadm token create --print-join-command
-JOIN_COMMAND="kubeadm join 128.110.219.144:6443 --token dltlkp.li4k7pnixgckcmpx --discovery-token-ca-cert-hash sha256:7171a0518a3c5fa8ed2a0db1545e598470166c3994f555b53cc55662bdf7ce03"
+JOIN_COMMAND=$(sudo kubeadm token create --print-join-command)
 
 # /etc/hosts has one line for each node plus one line for localhost, 
 NUM_NODES=$(($(wc -l < /etc/hosts)-1))
