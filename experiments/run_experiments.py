@@ -49,7 +49,7 @@ def run_experiment_trials(args):
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
 
             # clear the redpanda topic (if using redpanda backend)
-            if(not CONSUMER_ONLY and backend == "redpanda"):
+            if(not CONSUMER_ONLY):
                 redpanda.delete_topic(benchmark)
                 redpanda.create_topic(benchmark)
 
@@ -83,7 +83,6 @@ def run_experiment_trials(args):
                         "trial": i, 
                         "time": "ERROR", 
                         "type": job.job_type, 
-                        "backend": backend, 
                         "benchmark": benchmark,
                         "redpanda_async": redpanda_async
                     })
@@ -99,32 +98,29 @@ def run_experiment_trials(args):
                         "trial": i, 
                         "time": time_taken, 
                         "type": job.job_type, 
-                        "backend": backend, 
                         "benchmark": benchmark,
                         "redpanda_async": redpanda_async,
                         "checkpointing_interval": args.checkpointing_interval
                     })
 
             # get the latency from kubernetes logs
-            if(backend == "redpanda"):
-                tags = ["[SNAPSHOT_TIME]", "[FLINK_QUESTDB_RUNTIME]"]
-                logged_tag_values = k8s.get_tags_from_pod_logs(
-                    pods, 
-                    start_time, 
-                    tags
-                )
+            tags = ["[SNAPSHOT_TIME]", "[FLINK_QUESTDB_RUNTIME]"]
+            logged_tag_values = k8s.get_tags_from_pod_logs(
+                pods, 
+                start_time, 
+                tags
+            )
 
-                res_dict = {
-                    "trial": i,
-                    "backend": backend, 
-                    "benchmark": benchmark,
-                    "redpanda_async": redpanda_async,
-                }
+            res_dict = {
+                "trial": i,
+                "benchmark": benchmark,
+                "redpanda_async": redpanda_async,
+            }
 
-                for tag in tags:
-                    res_dict[tag] = logged_tag_values[tag]
+            for tag in tags:
+                res_dict[tag] = logged_tag_values[tag]
 
-                result.append(res_dict)
+            result.append(res_dict)
             
 
         json.dump(result, file, indent=4)
