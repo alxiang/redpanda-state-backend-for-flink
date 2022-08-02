@@ -1,15 +1,12 @@
 import subprocess
-from typing import NamedTuple
+
+from experiments.utils.jobs import Job
 
 #Assumes flink redpanda-state-backend-for-flink is in flink folder. If it isn't, can set flink path manually
 BASE = "/local" # /home/alec
 HOME = "/users/alxiang"
 FLINKPATH = f"{BASE}/flink-1.13.2"
 ROOTPATH = f"{BASE}/flink-1.13.2/redpanda-state-backend-for-flink"
-
-class Job(NamedTuple):
-    job_type: str
-    proc: subprocess.CompletedProcess
 
 #Mapping of a benchmark to its file name, edit whenever creating a new benchmark
 BENCHMARK_MAP = {
@@ -18,7 +15,7 @@ BENCHMARK_MAP = {
     # "Printing": "PrintingJobBenchmark"
 }
 
-def launch_flink_producer_job(args):
+def launch_flink_producer_job(args) -> Job:
 
     proc = subprocess.Popen([
         f"{FLINKPATH}/bin/flink",
@@ -28,13 +25,12 @@ def launch_flink_producer_job(args):
         "-c", 
         f"input.{BENCHMARK_MAP[args.benchmark]}",
         f"{ROOTPATH}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
-        args.benchmark, # topic
-        "192.168.122.132", # master machine address
+        args.master, # master machine address
     ], stdout=subprocess.PIPE)
    
     return Job("producer", proc)
 
-def launch_flink_consumer_job(args):
+def launch_flink_consumer_job(args) -> Job:
 
     proc = subprocess.Popen([
         f"{FLINKPATH}/bin/flink",

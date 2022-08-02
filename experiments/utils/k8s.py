@@ -1,10 +1,11 @@
 import subprocess
 from collections import defaultdict
+from typing import Dict, List
 from utils.flink import HOME
 
 from kubernetes import client, config
 
-def get_kube_pods():
+def get_kube_pods() -> List[str]:
 
     config.load_kube_config(f"{HOME}/.kube/config")
 
@@ -52,7 +53,7 @@ def get_tags_from_pod_logs(pods, start_time, tags):
 
     return res
 
-def reset_kube_cluster():
+def reset_kube_cluster() -> None:
     print("Resetting the kube cluster")
 
     for task_executor in get_kube_pods():
@@ -79,4 +80,3 @@ def reset_kube_cluster():
         print(task_executor, output)
 
     print("Cluster has been reset")
-    return
