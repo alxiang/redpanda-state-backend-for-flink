@@ -3,7 +3,7 @@ from typing import NamedTuple
 
 #Assumes flink redpanda-state-backend-for-flink is in flink folder. If it isn't, can set flink path manually
 BASE = "/local" # /home/alec
-HOME = "/home/alxiang"
+HOME = "/users/alxiang"
 FLINKPATH = f"{BASE}/flink-1.13.2"
 ROOTPATH = f"{BASE}/flink-1.13.2/redpanda-state-backend-for-flink"
 

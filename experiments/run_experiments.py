@@ -133,13 +133,13 @@ def run_experiment_trials(args):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('master', type=str, default="", nargs="?")
     parser.add_argument('k', type=int, default=1, nargs='?') # number of runs
     parser.add_argument('checkpointing_interval', type=str, default="1000", nargs='?')
     parser.add_argument('benchmark', type=str, default='Wiki', nargs='?')
 
     parser.add_argument('producers', type=int, default=1, nargs='?')
     parser.add_argument('consumers', type=int, default=1, nargs='?')
-    parser.add_argument('master', type=str, default="", nargs="?")
 
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()
