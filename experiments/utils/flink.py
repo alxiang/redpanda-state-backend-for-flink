@@ -1,6 +1,6 @@
 import subprocess
 
-from experiments.utils.jobs import Job
+from utils.jobs import Job
 
 #Assumes flink redpanda-state-backend-for-flink is in flink folder. If it isn't, can set flink path manually
 BASE = "/local" # /home/alec

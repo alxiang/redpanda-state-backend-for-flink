@@ -1,6 +1,6 @@
 import subprocess
 
-from experiments.utils.flink import ROOTPATH, Job
+from utils.flink import ROOTPATH, Job
 
 
 def launch_application_job(args, pod) -> Job:

@@ -49,7 +49,21 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "apt install -y dstat; git clone https://github.com/alxiang/redpanda-state-backend-for-flink.git && chown -R flink:flink redpanda-state-backend-for-flink; storaged --config /opt/flink/redpanda-state-backend-for-flink/cloudlab/jiffy.conf & su - flink -c '/opt/flink/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start -d /opt/flink/.questdb' & sleep 3 && watch -n 1 'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb' &"]                  
+              command:
+                - "sh"
+                - "-c"
+                - >
+                  git clone https://github.com/alxiang/redpanda-state-backend-for-flink.git;
+                  chown -R flink:flink redpanda-state-backend-for-flink;
+                  cd redpanda-state-backend-for-flink && mvn clean package;
+                  nohup storaged --config /opt/flink/redpanda-state-backend-for-flink/cloudlab/jiffy.conf &
+                # su - flink -c '/opt/flink/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start -d /opt/flink/.questdb' & 
+                # sleep 10 && watch -n 1 'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb' &
+
+        # lifecycle:
+        #   postStart:
+        #     exec:
+        #       command: ["/bin/sh", "-c", "apt install -y dstat; git clone https://github.com/alxiang/redpanda-state-backend-for-flink.git && chown -R flink:flink redpanda-state-backend-for-flink && cd redpanda-state-backend-for-flink && mvn clean package; storaged --config /opt/flink/redpanda-state-backend-for-flink/cloudlab/jiffy.conf & su - flink -c '/opt/flink/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start -d /opt/flink/.questdb' & sleep 10" # watch -n 1 'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb' &
       volumes:
       - name: flink-config-volume
         configMap:

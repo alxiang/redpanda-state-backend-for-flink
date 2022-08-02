@@ -4,15 +4,11 @@ from datetime import timezone, date
 import json
 import time
 import os
-from experiments.utils.apps import launch_application_job
-from experiments.utils.jobs import wait_for_jobs
-from experiments.utils.k8s import get_kube_pods
-
-from utils import redpanda, k8s
-from utils.flink import BENCHMARK_MAP, ROOTPATH, launch_flink_producer_job, launch_flink_consumer_job
-
+from utils import apps, flink, k8s, redpanda
+from utils.jobs import wait_for_jobs, Job
 
 today_folder = date.today().strftime("%m-%d-%Y")
+
 
 def run_experiment_trials(args) -> None:
 
@@ -22,7 +18,7 @@ def run_experiment_trials(args) -> None:
     consumers = args.consumers
 
     current_time = datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-    filename = f"{ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}x{args.consumers}_{current_time}_{benchmark}.json"
+    filename = f"{flink.ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}x{args.consumers}_{current_time}_{benchmark}.json"
     print(f"[{current_time}]: Running experiment {producers}x{consumers} with {benchmark} benchmark, {k} trials")
     with open(filename, mode='w+') as file:
         result = []
@@ -33,7 +29,7 @@ def run_experiment_trials(args) -> None:
         jobs = []
         for i in range(producers):
             print(f"Submitting Producer Job {i}")
-            jobs.append(launch_flink_producer_job(args))
+            jobs.append(flink.launch_flink_producer_job(args))
             time.sleep(1)
 
         wait_for_jobs(jobs)
@@ -56,12 +52,12 @@ def run_experiment_trials(args) -> None:
             # Launch consumers to be scheduled across the cluster by Flink
             for i in range(consumers):
                 print(f"Submitting Consumer Job {i}")
-                jobs.append(launch_flink_consumer_job(args))
+                jobs.append(flink.launch_flink_consumer_job(args))
                 # slightly stagger job submission so no slot errors
                 time.sleep(1)
             # Launch the application on each pod
-            # for pod in get_kube_pods(): 
-            #     jobs.append(launch_application_job(args, pod))
+            # for pod in k8s.get_kube_pods(): 
+            #     jobs.append(apps.launch_application_job(args, pod))
             wait_for_jobs(jobs)
 
 
@@ -122,7 +118,7 @@ def run_experiment_trials(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('master', type=str, default="", nargs="?")
+    parser.add_argument('master', type=str, default="10.10.1.1", nargs="?")
     parser.add_argument('k', type=int, default=1, nargs='?')  # number of runs
     parser.add_argument('checkpointing_interval', type=str,
                         default="1000", nargs='?')
@@ -138,7 +134,7 @@ def main() -> None:
     # make a folder to save the experiments for today
     os.makedirs(today_folder, exist_ok=True)
 
-    if args.benchmark not in BENCHMARK_MAP:
+    if args.benchmark not in flink.BENCHMARK_MAP:
         print("Can't find benchmark with name", args.benchmark)
         return
 
