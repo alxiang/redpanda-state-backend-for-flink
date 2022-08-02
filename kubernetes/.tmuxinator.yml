@@ -10,8 +10,6 @@ windows:
       - kube-launch:
         - ./kube-teardown.sh; ./kube-startup.sh
       - directory-daemon:
-        - cd /local/jiffy && directoryd
-      # - storage-daemon:
-      #   - cd /local/jiffy && storaged
+        - directoryd --config /local/flink-1.13.2/redpanda-state-backend-for-flink/cloudlab/jiffy.conf
       - redpanda:
         - systemctl status redpanda
