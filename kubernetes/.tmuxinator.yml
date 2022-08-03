@@ -11,5 +11,7 @@ windows:
         - ./kube-teardown.sh; ./kube-startup.sh
       - directory-daemon:
         - directoryd --config /local/flink-1.13.2/redpanda-state-backend-for-flink/cloudlab/jiffy.conf
-      - redpanda:
-        - systemctl status redpanda
+      - zookeeper:
+        - cd ../kafka && kafka_2.13-3.2.1/bin/zookeeper-server-start.sh kafka_2.13-3.2.1/config/zookeeper.properties
+      - broker:
+        - cd ../kafka && sleep 3 && kafka_2.13-3.2.1/bin/zookeeper-server-start.sh server.properties
