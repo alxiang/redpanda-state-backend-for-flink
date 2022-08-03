@@ -27,12 +27,15 @@ public class QuestDBClient {
     }
 
     public void query_latest_timestamp(){
+        System.out.println("Querying latest timestamp...");
         try (ResultSet rs = this.query.executeQuery()) {
             while (rs.next()) {
                 System.out.println("[DATA_FRESHNESS]: " + rs.getTimestamp("ts"));
             }
         }
-        catch(Exception e){}
+        catch(Exception e){
+            System.out.println(e);
+        }
     }
 
     public void close(){
@@ -45,6 +48,8 @@ public class QuestDBClient {
 
     public static void main(String... args) throws Exception {
 
+        System.out.println("Starting up the client!");
+
         String query = (
             "SELECT timestamp\n"+
             "FROM wikitable\n"+
@@ -56,5 +61,7 @@ public class QuestDBClient {
         client.query_latest_timestamp();
 
         client.close();
+
+        System.out.println("Terminating...");
     }
 }

@@ -67,7 +67,7 @@ def run_experiment_trials(args) -> None:
                 runtime_tag = "Job Runtime: "
 
                 start_ind = text_output.rfind(runtime_tag)
-                if job_type == "consumer" or job_type == "producer":
+                if job.job_type == "consumer" or job.job_type == "producer":
                     if start_ind == -1:
                         print("Trial resulted in error")
                         print(text_output)
