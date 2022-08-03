@@ -58,7 +58,6 @@ spec:
                   cd redpanda-state-backend-for-flink && mvn clean package;
                   storaged --config /opt/flink/redpanda-state-backend-for-flink/cloudlab/jiffy.conf >/dev/null 2>&1 &
                   su - flink -c '/opt/flink/questdb-6.2.1-rt-linux-amd64/bin/questdb.sh start -d /opt/flink/.questdb' >/dev/null 2>&1 &
-                  sleep 3 && watch -n 1 'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb' >/dev/null 2>&1 &
 
         # lifecycle:
         #   postStart:

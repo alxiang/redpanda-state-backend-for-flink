@@ -29,7 +29,7 @@ public class QuestDBClient {
     public void query_latest_timestamp(){
         try (ResultSet rs = this.query.executeQuery()) {
             while (rs.next()) {
-                System.out.println(rs.getTimestamp("ts"));
+                System.out.println("[DATA_FRESHNESS]: " + rs.getTimestamp("ts"));
             }
         }
         catch(Exception e){}

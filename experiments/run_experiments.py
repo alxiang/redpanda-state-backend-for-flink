@@ -23,8 +23,8 @@ def run_experiment_trials(args) -> None:
     with open(filename, mode='w+') as file:
         result = []
 
-        redpanda.delete_topic(benchmark)
-        redpanda.create_topic(benchmark)
+        # redpanda.delete_topic(benchmark)
+        # redpanda.create_topic(benchmark)
 
         jobs = []
         for i in range(producers):
@@ -46,8 +46,6 @@ def run_experiment_trials(args) -> None:
             pods = k8s.get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
 
-            return
-
 
             ### JOB SUBMISSION
             jobs = []
@@ -58,8 +56,8 @@ def run_experiment_trials(args) -> None:
                 # slightly stagger job submission so no slot errors
                 time.sleep(1)
             # Launch the application on each pod
-            # for pod in k8s.get_kube_pods(): 
-            #     jobs.append(apps.launch_application_job(args, pod))
+            for pod in k8s.get_kube_pods(): 
+                jobs.append(apps.launch_application_job(args, pod))
             wait_for_jobs(jobs)
 
 
@@ -69,32 +67,33 @@ def run_experiment_trials(args) -> None:
                 runtime_tag = "Job Runtime: "
 
                 start_ind = text_output.rfind(runtime_tag)
-                if start_ind == -1:
-                    print("Trial resulted in error")
-                    print(text_output)
+                if job_type == "consumer" or job_type == "producer":
+                    if start_ind == -1:
+                        print("Trial resulted in error")
+                        print(text_output)
 
-                    result.append({
-                        "trial": i,
-                        "time": "ERROR",
-                        "type": job.job_type,
-                        "benchmark": benchmark,
-                    })
+                        result.append({
+                            "trial": i,
+                            "time": "ERROR",
+                            "type": job.job_type,
+                            "benchmark": benchmark,
+                        })
 
-                else:
-                    start_ind = start_ind + len(runtime_tag)
-                    # Not sure if this is safe to get the time if it isn't always in ms
-                    end_ind = start_ind+text_output[start_ind:].find("ms")
-                    time_taken = int(text_output[start_ind:end_ind])
+                    else:
+                        start_ind = start_ind + len(runtime_tag)
+                        # Not sure if this is safe to get the time if it isn't always in ms
+                        end_ind = start_ind+text_output[start_ind:].find("ms")
+                        time_taken = int(text_output[start_ind:end_ind])
 
-                    print(
-                        f"{job.job_type} job (Trial {i}) finished in {time_taken} ms")
-                    result.append({
-                        "trial": i,
-                        "time": time_taken,
-                        "type": job.job_type,
-                        "benchmark": benchmark,
-                        "checkpointing_interval": args.checkpointing_interval
-                    })
+                        print(
+                            f"{job.job_type} job (Trial {i}) finished in {time_taken} ms")
+                        result.append({
+                            "trial": i,
+                            "time": time_taken,
+                            "type": job.job_type,
+                            "benchmark": benchmark,
+                            "checkpointing_interval": args.checkpointing_interval
+                        })
 
             res_dict = {
                 "trial": i,

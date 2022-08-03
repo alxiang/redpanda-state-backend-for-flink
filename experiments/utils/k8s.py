@@ -66,7 +66,7 @@ def reset_kube_cluster() -> None:
                 '-r',
                 '.questdb/wikitable'
             ], capture_output=True)
-        print(task_executor, output)
+        # print(task_executor, output)
 
         output = subprocess.run([
                 'kubectl',
@@ -77,6 +77,18 @@ def reset_kube_cluster() -> None:
                 '-r',
                 '.questdb/wikitable.lock'
             ], capture_output=True)
-        print(task_executor, output)
+        # print(task_executor, output)
+
+        output = subprocess.run([
+                'kubectl',
+                'exec',
+                task_executor,
+                '--',
+                'watch',
+                '-n',
+                '1',
+                "'chmod -R 777 /opt/flink/.questdb && chown -R flink:flink /opt/flink/.questdb'",
+                '&'
+            ], capture_output=True)
 
     print("Cluster has been reset")
