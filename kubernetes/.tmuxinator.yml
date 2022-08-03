@@ -14,4 +14,4 @@ windows:
       - zookeeper:
         - cd ../kafka && kafka_2.13-3.2.1/bin/zookeeper-server-start.sh kafka_2.13-3.2.1/config/zookeeper.properties
       - broker:
-        - cd ../kafka && sleep 3 && kafka_2.13-3.2.1/bin/zookeeper-server-start.sh server.properties
+        - cd ../kafka && sleep 3 && kafka_2.13-3.2.1/bin/kafka-server-start.sh ./server.properties

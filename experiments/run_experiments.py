@@ -46,6 +46,8 @@ def run_experiment_trials(args) -> None:
             pods = k8s.get_kube_pods()
             start_time = datetime.datetime.now(timezone.utc).astimezone().isoformat()
 
+            return
+
 
             ### JOB SUBMISSION
             jobs = []
