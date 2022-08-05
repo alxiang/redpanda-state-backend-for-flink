@@ -16,7 +16,7 @@ public class QuestDBClient {
             properties.setProperty("sslmode", "disable");
 
             this.connection = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:8812/qdb", properties);
+                "jdbc:postgresql://localhost:8812/wikitable", properties);
 
             this.query = this.connection.prepareStatement(
                 query_

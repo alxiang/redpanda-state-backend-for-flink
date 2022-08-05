@@ -32,13 +32,18 @@ def launch_flink_producer_job(args) -> Job:
 
 def launch_flink_consumer_job(args) -> Job:
 
+    if args.application == "QuestDBClient":
+        etl_class = "etl.QueryEngineFlink"
+    elif args.application == "VectorSim":
+        etl_class = "etl.VectorSimFlink"
+
     proc = subprocess.Popen([
         f"{FLINKPATH}/bin/flink",
         "run",
         "-m",
         f"localhost:{args.port}",
         "-c", 
-        "etl.QueryEngineFlink",
+        etl_class,
         f"{ROOTPATH}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
         args.master, # master machine address
         args.checkpointing_interval,

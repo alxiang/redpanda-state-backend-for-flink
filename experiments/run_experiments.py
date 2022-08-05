@@ -2,6 +2,7 @@ import argparse
 import datetime
 from datetime import timezone, date
 import json
+import subprocess
 import time
 import os
 from utils import apps, flink, k8s, redpanda
@@ -16,6 +17,7 @@ def run_experiment_trials(args) -> None:
     benchmark = args.benchmark
     producers = args.producers
     consumers = args.consumers
+    application = args.application
 
     current_time = datetime.datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
     filename = f"{flink.ROOTPATH}/experiments/{today_folder}/{args.checkpointing_interval}_{args.producers}x{args.consumers}_{current_time}_{benchmark}.json"
@@ -25,12 +27,23 @@ def run_experiment_trials(args) -> None:
 
         # redpanda.delete_topic(benchmark)
         # redpanda.create_topic(benchmark)
-
+        
         jobs = []
-        for i in range(producers):
-            print(f"Submitting Producer Job {i}")
-            jobs.append(flink.launch_flink_producer_job(args))
-            time.sleep(1)
+        if application == "QuestDBClient":
+            for i in range(producers):
+                print(f"Submitting Producer Job {i}")
+                jobs.append(flink.launch_flink_producer_job(args))
+                time.sleep(1)
+        elif application == "VectorSim":
+            proc = subprocess.Popen([
+                "python",
+                "src/python/applications/vector_similarity_search/datasource.py",
+                args.master,
+                1_000_000*producers, # number of vectors to produce into topic
+                64 # length of each vector
+            ], stdout=subprocess.PIPE)
+
+            jobs.append(Job("producer", proc))
 
         wait_for_jobs(jobs)
 
@@ -101,7 +114,7 @@ def run_experiment_trials(args) -> None:
             }
 
             # get metrics from kubernetes logs
-            tags = ["[SNAPSHOT_TIME]", "[FLINK_QUESTDB_RUNTIME]"]
+            tags = ["[SNAPSHOT_TIME]", "[FLINK_QUESTDB_RUNTIME]", "[DATA_FRESHNESS]"]
             logged_tag_values = k8s.get_tags_from_pod_logs(
                 pods,
                 start_time,
