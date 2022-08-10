@@ -3,8 +3,6 @@ import numpy as np
 import psycopg2
 import time
 
-connection = None
-cursor = None
 
 
 def do_application_logic(target, records):
@@ -33,8 +31,9 @@ def main() -> None:
     args = parser.parse_args()
 
     target = np.random.rand(args.vector_size)
+    connection = None
+    cursor = None
     try:
-        cursor = connection.cursor()
         connection = psycopg2.connect(
             user="admin",
             password="quest",
@@ -42,6 +41,7 @@ def main() -> None:
             port="8812",
             database="vectortable"
         )
+        cursor = connection.cursor()
 
         # Keep querying from vectortable until max_index == num_vectors-1    
         max_index = 0
