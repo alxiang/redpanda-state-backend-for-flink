@@ -25,10 +25,10 @@ def launch_application_job(args, pod) -> Job:
             "exec",
             pod,
             "--",
-            "python",
+            "python3.8",
             "/opt/flink/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/vector_similarity.py",
-            1_000_000*args.producers,
-            64
+            str(1_000_000*args.producers),
+            str(64)
         ], stdout=subprocess.PIPE)
 
    
