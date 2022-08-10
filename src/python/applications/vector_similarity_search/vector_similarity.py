@@ -39,7 +39,7 @@ def main() -> None:
             password="quest",
             host="127.0.0.1",
             port="8812",
-            database="vectortable"
+            database="qdb"
         )
         cursor = connection.cursor()
 
