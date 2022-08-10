@@ -57,7 +57,7 @@ spec:
                   wget https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tgz && tar xzvf Python-3.8.2.tgz;
                   cd Python-3.8.2 && ./configure && make && make install;
                   python3.8 -m pip install --upgrade pip;
-                  python3.8 -m pip install numpy kafka;
+                  python3.8 -m pip install numpy kafka-python;
                   git clone https://github.com/alxiang/redpanda-state-backend-for-flink.git;
                   chown -R flink:flink redpanda-state-backend-for-flink;
                   cd redpanda-state-backend-for-flink && mvn clean package;
