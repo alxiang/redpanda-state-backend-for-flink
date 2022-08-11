@@ -26,7 +26,7 @@ public class TupleRecordDeserializationSchema implements KafkaRecordDeserializat
         long_deserializer = new LongDeserializer();
 
         rec.key = string_deserializer.deserialize(record.topic(), record.key());
-        rec.value = long_deserializer.deserialize(record.topic(), record.value());
+        rec.value = Long.valueOf(string_deserializer.deserialize(record.topic(), record.value()));
         rec.topic = record.topic();
         rec.offset = record.offset();
         rec.timestamp = record.timestamp();

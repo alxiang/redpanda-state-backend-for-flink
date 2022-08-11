@@ -17,7 +17,7 @@ def produce_vectors(args):
     producer = KafkaProducer(
         bootstrap_servers=f'{args.host}:9192',
         key_serializer=lambda k: json.dumps(k).encode('ascii'),
-        value_serializer=lambda v: json.dumps(str(v)).encode('ascii'),
+        value_serializer=lambda v: json.dumps(v).encode('ascii'),
         linger_ms=1000,
     )
 
