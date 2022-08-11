@@ -59,14 +59,12 @@ def main() -> None:
                 cursor.execute(postgreSQL_select_Query)
                 print('Selecting recent rows from test table using cursor.fetchall')
                 records = cursor.fetchall()
+                max_index = do_application_logic(target, records)
             except Exception as e:
                 retries -= 1
                 time.sleep(5)
                 if(retries == 0):
                     raise e
-
-            max_index = do_application_logic(target, records)
-            
 
             time.sleep(0.1)
 
