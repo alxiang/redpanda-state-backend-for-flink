@@ -94,6 +94,7 @@ def run_experiment_trials(args) -> None:
             ### METRICS COLLECTION
             for job in jobs:
                 text_output = job.proc.stdout.read().decode("utf-8")
+                print(job.job_type, text_output)
                 runtime_tag = "Job Runtime: "
 
                 start_ind = text_output.rfind(runtime_tag)

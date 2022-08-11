@@ -9,7 +9,7 @@ def timestamp(dt):
     epoch = datetime.utcfromtimestamp(0)
     return (dt - epoch).total_seconds() * 1000.0 * 1000.0
 
-def do_application_logic(target, records):
+def do_application_logic(target, records, prev_max_ind):
     max_ind = 0
     freshness = []
     for row in records:
@@ -23,7 +23,8 @@ def do_application_logic(target, records):
         
 
     avg_freshness = np.mean(freshness)
-    print(f"[DATA_FRESHNESS]: {avg_freshness}")
+    if max_ind > prev_max_ind:
+        print(f"[DATA_FRESHNESS]: {avg_freshness}")
 
     return max_ind
 
@@ -59,7 +60,7 @@ def main() -> None:
                 cursor.execute(postgreSQL_select_Query)
                 print('Selecting recent rows from test table using cursor.fetchall')
                 records = cursor.fetchall()
-                max_index = do_application_logic(target, records)
+                max_index = do_application_logic(target, records, prev_max_ind=max_ind)
             except Exception as e:
                 retries -= 1
                 time.sleep(5)

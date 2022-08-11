@@ -31,7 +31,7 @@ def launch_application_job(args, pod) -> Job:
             str(64)
         ], stdout=subprocess.PIPE)
 
-        print(f"Submitted proc {proc}")
+        print(f"Submitted job to pod {pod}")
 
    
     return Job(f"application", proc)
