@@ -60,7 +60,7 @@ def main() -> None:
                 cursor.execute(postgreSQL_select_Query)
                 print('Selecting recent rows from test table using cursor.fetchall')
                 records = cursor.fetchall()
-                max_index = do_application_logic(target, records, prev_max_ind=max_ind)
+                max_index = max(do_application_logic(target, records, prev_max_ind=max_ind), max_index)
             except Exception as e:
                 retries -= 1
                 time.sleep(5)
