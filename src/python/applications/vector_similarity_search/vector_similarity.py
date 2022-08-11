@@ -14,7 +14,6 @@ def do_application_logic(target, records):
     freshness = []
     for row in records:
         vec_str, ind, ts = row[0], row[1], row[2]
-        print(time.time() * 1000, timestamp(ts))
         freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
 
@@ -25,7 +24,6 @@ def do_application_logic(target, records):
 
     avg_freshness = np.mean(freshness)
     print(f"[DATA_FRESHNESS]: {avg_freshness}")
-    print(max_ind)
 
     return max_ind
 
