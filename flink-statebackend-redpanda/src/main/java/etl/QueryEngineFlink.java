@@ -33,7 +33,7 @@ public class QueryEngineFlink {
             application = args[2];
         }
         if(args.length >= 4){
-            num_producers = Long.valueOf(args[2]);
+            num_producers = Long.valueOf(args[3]);
         }
 
 		// set up the streaming execution environment
