@@ -15,7 +15,7 @@ def do_application_logic(target, records):
     for row in records:
         vec_str, ind, ts = row[0], row[1], row[2]
         print(ind)
-        # print(vec_str, ind, ts, time.time() * 1000, timestamp(ts))
+        print(vec_str, ind, ts, time.time() * 1000, timestamp(ts))
         freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
 
@@ -54,7 +54,7 @@ def main() -> None:
         max_index = 0
         while max_index < args.num_vectors-1:
             print(f"{max_index=}")
-            postgreSQL_select_Query = f'SELECT * FROM vectortable WHERE count >= {max_index}'
+            postgreSQL_select_Query = f'SELECT * FROM vectortable WHERE count >= {max_index} LIMIT 10'
             cursor.execute(postgreSQL_select_Query)
             print('Selecting recent rows from test table using cursor.fetchall')
             records = cursor.fetchall()
