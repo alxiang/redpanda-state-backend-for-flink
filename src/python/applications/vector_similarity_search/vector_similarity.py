@@ -53,12 +53,13 @@ def main() -> None:
         # Keep querying from vectortable until max_index == num_vectors-1    
         max_index = 0
         while max_index < args.num_vectors-1:
+            print(f"{max_index=}")
             postgreSQL_select_Query = f'SELECT * FROM vectortable WHERE count >= {max_index}'
             cursor.execute(postgreSQL_select_Query)
             print('Selecting recent rows from test table using cursor.fetchall')
             records = cursor.fetchall()
             max_index = do_application_logic(target, records)
-            print(max_index)
+            
 
             time.sleep(0.1)
 
