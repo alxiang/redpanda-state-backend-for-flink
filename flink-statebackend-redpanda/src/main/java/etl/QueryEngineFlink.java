@@ -18,13 +18,21 @@ public class QueryEngineFlink {
         String directory_daemon_address = "127.0.0.1";
         Long checkpointing_interval = 1000L;
         Long num_producers = 1L;
+        String application = "Wiki";
+        String table_name = null;
+        String topic = null;
+        Long num_records = null;
 
         if(args.length >= 1){
 			directory_daemon_address = args[0];
 		}	
         if(args.length >= 2){
             checkpointing_interval = Long.valueOf(args[1]);
-        }if(args.length >= 3){
+        }
+        if(args.length >= 3){
+            application = args[2];
+        }
+        if(args.length >= 4){
             num_producers = Long.valueOf(args[2]);
         }
 
@@ -34,19 +42,29 @@ public class QueryEngineFlink {
 		env.disableOperatorChaining();
 		env.enableCheckpointing(checkpointing_interval);
 
-        String table_name = "wikitable";
+        if(application.equals("Wiki")){
+            table_name = "wikitable";
+            topic = "Wiki";
+            num_records = 5436759L;
+        }
+        else if(application.equals("VectorSim")){
+            table_name = "vectortable";
+            topic = "Vector";
+            num_records = 100000L;
+        }
+        
 
         HashMap<TopicPartition, Long> partition_map = new HashMap<TopicPartition,Long>();
         partition_map.put(
-            new TopicPartition("Wiki", 0), 
-            5436759L*num_producers
+            new TopicPartition(topic, 0), 
+            num_records*num_producers
         );
 
         KafkaSource<KafkaRecord> source = KafkaSource
             .<KafkaRecord>builder()
             .setBootstrapServers(directory_daemon_address+":9192")
             .setGroupId("QuestDBConsumerFlink")
-            .setTopics("Wiki")
+            .setTopics(topic)
             .setDeserializer(new TupleRecordDeserializationSchema())
             .setStartingOffsets(OffsetsInitializer.earliest())
             .setBounded(OffsetsInitializer.offsets(partition_map))

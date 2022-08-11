@@ -52,10 +52,10 @@ def run_experiment_trials(args) -> None:
                 time.sleep(1)
         elif application == "VectorSim":
             proc = subprocess.Popen([
-                "python",
+                "python3.8",
                 "/local/flink-1.13.2/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/datasource.py",
                 args.master,
-                str(1_000_000*producers), # number of vectors to produce into topic
+                str(100_000*producers), # number of vectors to produce into topic
                 str(64) # length of each vector
             ], stdout=subprocess.PIPE)
 
