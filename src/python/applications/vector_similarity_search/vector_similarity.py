@@ -2,15 +2,19 @@ import argparse
 import numpy as np
 import psycopg2
 import time
+from datetime import datetime
 
 
+def timestamp(dt):
+    epoch = datetime.utcfromtimestamp(0)
+    return (dt - epoch).total_seconds() * 1000.0
 
 def do_application_logic(target, records):
     max_ind = 0
     freshness = []
     for row in records:
         vec_str, ind, ts = row[0], row[1], row[2]
-        freshness.append(time.time() * 1000 - ts)
+        freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
 
         vec = np.array(vec_str.split(","))
