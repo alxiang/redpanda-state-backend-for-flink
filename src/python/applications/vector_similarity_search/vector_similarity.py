@@ -18,7 +18,7 @@ def do_application_logic(target, records):
         freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
 
-        vec = np.array(vec_str.split(",")).astype(np.float64)
+        vec = np.array([float(x) for x in vec_str.split(",")])
         # Do some computation for realistic measuremtn
         dist = np.linalg.norm(target - vec) 
         
