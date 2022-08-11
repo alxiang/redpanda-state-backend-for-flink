@@ -14,6 +14,7 @@ def do_application_logic(target, records):
     freshness = []
     for row in records:
         vec_str, ind, ts = row[0], row[1], row[2]
+        print(ind)
         # print(vec_str, ind, ts, time.time() * 1000, timestamp(ts))
         freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
@@ -57,6 +58,7 @@ def main() -> None:
             print('Selecting recent rows from test table using cursor.fetchall')
             records = cursor.fetchall()
             max_index = do_application_logic(target, records)
+            print(max_index)
 
             time.sleep(0.1)
 
