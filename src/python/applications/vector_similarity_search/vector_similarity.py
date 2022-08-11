@@ -14,6 +14,7 @@ def do_application_logic(target, records):
     freshness = []
     for row in records:
         vec_str, ind, ts = row[0], row[1], row[2]
+        print(vec_str, ind, ts)
         freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
 
