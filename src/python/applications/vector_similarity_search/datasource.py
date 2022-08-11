@@ -22,7 +22,7 @@ def produce_vectors(args):
     )
 
     
-    for i in tqdm(range(args.num_vectors)):
+    for i in tqdm(range(int(args.num_vectors*1.2))):
         vec = generate_vector(args.vector_size)
         producer.send(
             topic="Vector", 

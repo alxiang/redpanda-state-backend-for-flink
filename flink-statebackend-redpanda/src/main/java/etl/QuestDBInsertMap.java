@@ -76,15 +76,15 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
         connectToJiffy();
 
         // Ask Jiffy for a memory mapped file for the parquet file
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/count.d");
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/ts.d");
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/word.d");
-        allocateJiffyFile("/opt/flink/.questdb/"+table_name+"/default/word.i");
+        allocateJiffyFile("/opt/flink/.questdb/db/"+table_name+"/default/count.d");
+        allocateJiffyFile("/opt/flink/.questdb/db/"+table_name+"/default/ts.d");
+        allocateJiffyFile("/opt/flink/.questdb/db/"+table_name+"/default/word.d");
+        allocateJiffyFile("/opt/flink/.questdb/db/"+table_name+"/default/word.i");
 
         System.out.println("JiffyClient and Jiffy files for table successfully initialized.");
 
         // Set up questdb
-        final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb");
+        final CairoConfiguration configuration = new DefaultCairoConfiguration("/opt/flink/.questdb/db");
 
         // CairoEngine is a resource manager for embedded QuestDB
         this.engine = new CairoEngine(configuration);

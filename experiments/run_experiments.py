@@ -86,6 +86,7 @@ def run_experiment_trials(args) -> None:
                 time.sleep(1)
             # Launch the application on each pod
             for pod in k8s.get_kube_pods(): 
+                print(f"Submitting application job {i} for application {args.application}")
                 jobs.append(apps.launch_application_job(args, pod))
             wait_for_jobs(jobs)
 

@@ -64,7 +64,7 @@ def reset_kube_cluster() -> None:
                 '--',
                 'rm',
                 '-r',
-                '.questdb/wikitable'
+                '.questdb/db/wikitable'
             ], capture_output=True)
 
         output = subprocess.run([
@@ -74,7 +74,7 @@ def reset_kube_cluster() -> None:
                 '--',
                 'rm',
                 '-r',
-                '.questdb/vectortable'
+                '.questdb/db/vectortable'
             ], capture_output=True)
 
         output = subprocess.run([
@@ -84,7 +84,7 @@ def reset_kube_cluster() -> None:
                 '--',
                 'rm',
                 '-r',
-                '.questdb/wikitable.lock'
+                '.questdb/db/wikitable.lock'
             ], capture_output=True)
 
         output = subprocess.run([
@@ -94,7 +94,7 @@ def reset_kube_cluster() -> None:
                 '--',
                 'rm',
                 '-r',
-                '.questdb/vectortable.lock'
+                '.questdb/db/vectortable.lock'
             ], capture_output=True)
 
         # output = subprocess.run([
