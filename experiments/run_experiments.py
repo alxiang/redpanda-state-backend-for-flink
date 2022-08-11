@@ -27,7 +27,23 @@ def run_experiment_trials(args) -> None:
 
         # redpanda.delete_topic(benchmark)
         # redpanda.create_topic(benchmark)
-        
+        if application == "VectorSim":
+            # Clear the topic
+            try:
+                print("Cleaning the Vector topic if it exists")
+                proc = subprocess.Popen([
+                    "/local/flink-1.13.2/redpanda-state-backend-for-flink/kafka/kafka_2.13-3.2.1/bin/kafka-topics.sh",
+                    "--delete",
+                    "--topic",
+                    "Vector",
+                    "--bootstrap-server",
+                    f"{args.master}:9192"
+                ], stdout=subprocess.PIPE)
+
+                wait_for_jobs(Job("cleaning", proc))
+            except:
+                pass
+                    
         jobs = []
         if application == "QuestDBClient":
             for i in range(producers):
@@ -36,8 +52,8 @@ def run_experiment_trials(args) -> None:
                 time.sleep(1)
         elif application == "VectorSim":
             proc = subprocess.Popen([
-                "python3",
-                "/opt/flink/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/datasource.py",
+                "python",
+                "/local/flink-1.13.2/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/datasource.py",
                 args.master,
                 str(1_000_000*producers), # number of vectors to produce into topic
                 str(64) # length of each vector
