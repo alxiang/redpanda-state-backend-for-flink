@@ -62,7 +62,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
         String key = record.key;
         Long value = record.value;
 
-        TableWriter.Row row = writer.newRow((long) (System.nanoTime()*0.000001));
+        TableWriter.Row row = writer.newRow((long) (System.nanoTime()));
         row.putStr(0, key);
         row.putLong(1, value);
         row.append();
@@ -107,6 +107,7 @@ public class QuestDBInsertMap extends RichFlatMapFunction<KafkaRecord, Long> imp
 
     @Override
     public void close(){
+        this.writer.commit();
         this.writer.close();
         System.out.println("[FLINK_QUESTDB] Runtime: " + (time_now - start_time));
     }
