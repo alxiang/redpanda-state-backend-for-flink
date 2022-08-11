@@ -29,6 +29,7 @@ def do_application_logic(target, records):
 
 
 def main() -> None:
+    print("[VECTOR SIMILARITY STARTUP]")
     parser = argparse.ArgumentParser()
     parser.add_argument('num_vectors', type=int, default=1_000_000, nargs='?')  # number of vectors to produce
     parser.add_argument('vector_size', type=int, default=64, nargs='?')  # vector size
