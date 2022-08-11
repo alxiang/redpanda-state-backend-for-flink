@@ -7,15 +7,14 @@ from datetime import datetime
 
 def timestamp(dt):
     epoch = datetime.utcfromtimestamp(0)
-    return (dt - epoch).total_seconds() * 1000.0
+    return (dt - epoch).total_seconds() * 1000.0 * 1000.0
 
 def do_application_logic(target, records):
     max_ind = 0
     freshness = []
     for row in records:
         vec_str, ind, ts = row[0], row[1], row[2]
-        print(ind)
-        print(vec_str, ind, ts, time.time() * 1000, timestamp(ts))
+        print(time.time() * 1000, timestamp(ts))
         freshness.append(time.time() * 1000 - timestamp(ts))
         max_ind = max(max_ind, ind)
 
@@ -54,7 +53,7 @@ def main() -> None:
         max_index = 0
         while max_index < args.num_vectors-1:
             print(f"{max_index=}")
-            postgreSQL_select_Query = f'SELECT * FROM vectortable WHERE count >= {max_index} LIMIT 10'
+            postgreSQL_select_Query = f'SELECT * FROM vectortable WHERE count >= {max_index}'
             cursor.execute(postgreSQL_select_Query)
             print('Selecting recent rows from test table using cursor.fetchall')
             records = cursor.fetchall()
