@@ -32,11 +32,11 @@ def launch_flink_producer_job(args) -> Job:
 
 def launch_flink_consumer_job(args) -> Job:
 
-    # if args.application == "QuestDBClient":
-    etl_class = "etl.QueryEngineFlink"
-    # elif args.application == "VectorSim":
-    #     etl_class = "etl.VectorSimFlink"
-
+    if args.application == "VectorSimKafka":
+        etl_class = "etl.KafkaToQuest"
+    elif args.application == "VectorSimDelta":
+        etl_class = "etl.DeltaToQuest"
+        
     proc = subprocess.Popen([
         f"{FLINKPATH}/bin/flink",
         "run",

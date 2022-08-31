@@ -1,17 +1,21 @@
 package etl;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.connector.jdbc.JdbcExactlyOnceOptions;
+import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
+import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.kafka.common.TopicPartition;
+import org.postgresql.xa.PGXADataSource;
 
 import utils.KafkaRecord;
 import utils.TupleRecordDeserializationSchema;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 
-public class QueryEngineFlink {
+public class KafkaToQuest {
       
     public static void main(String[] args) throws Exception {
 
@@ -47,7 +51,7 @@ public class QueryEngineFlink {
             topic = "Wiki";
             num_records = 5436759L;
         }
-        else if(application.equals("VectorSim")){
+        else if(application.equals("VectorSimKafka")){
             table_name = "vectortable";
             topic = "Vector";
             num_records = 100000L;
@@ -71,10 +75,25 @@ public class QueryEngineFlink {
             .build();
 
         env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
-            .flatMap(new QuestDBInsertMap(table_name, directory_daemon_address))
-            .addSink(new DiscardingSink<>())
-			.slotSharingGroup("sink");
+        .addSink(JdbcSink.exactlyOnceSink(
+            "insert into vectortable (word, count, ts) values (?,?,?)",
+            (ps, t) -> {
+                ps.setString(1, t.key);
+                ps.setLong(2, t.value);
+                ps.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+            },
+            JdbcExecutionOptions.builder().build(),
+            JdbcExactlyOnceOptions.defaults(),
+            () -> {
+                // create a driver-specific XA DataSource
+                PGXADataSource ds = new PGXADataSource();
+                ds.setUrl("jdbc:postgresql://localhost:8812/vectortable");
+                ds.setUser("admin");
+                ds.setPassword("quest");
+                return ds;
+            }
+        ));
 
-		env.execute("Query Engine Flink Job");
+		env.execute("Kafka -> Flink -> Quest");
 	}
 }

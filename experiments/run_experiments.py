@@ -27,7 +27,7 @@ def run_experiment_trials(args) -> None:
 
         # redpanda.delete_topic(benchmark)
         # redpanda.create_topic(benchmark)
-        if application == "VectorSim":
+        if application == "VectorSimKafka":
             # Clear the topic
             try:
                 print("Cleaning the Vector topic if it exists")
@@ -50,7 +50,7 @@ def run_experiment_trials(args) -> None:
                 print(f"Submitting Producer Job {i}")
                 jobs.append(flink.launch_flink_producer_job(args))
                 time.sleep(1)
-        elif application == "VectorSim":
+        elif application == "VectorSimKafka": # TODO: run this synchronously
             proc = subprocess.Popen([
                 "python3.8",
                 "/local/flink-1.13.2/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/datasource.py",

@@ -44,6 +44,7 @@ under the License.
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<flink.version>1.13.2</flink.version>
 		<scala.binary.version>2.11</scala.binary.version>
+		<scala.main.version>2.11</scala.main.version>
 	</properties>
 
 	<modules>
