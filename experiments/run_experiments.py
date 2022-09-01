@@ -46,6 +46,25 @@ def run_experiment_trials(args) -> None:
         elif application == "VectorSimDelta":
             pass # TODO: cleanup for delta lake
                     
+        jobs = []
+        # Launch the data source on each pod
+        # TODO: these should run unbounded, and 
+        # we should determine steady state throughput and data freshness after warmup (everything is running together)
+        if application == "QuestDBClient" or application == "VectorSimDelta":
+            for i in range(producers):
+                print(f"Submitting Producer Job {i}")
+                jobs.append(flink.launch_flink_producer_job(args))
+                time.sleep(1)
+        elif application == "VectorSimKafka": 
+            proc = subprocess.Popen([
+                "python",
+                "/local/flink-1.13.2/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/kafka_datasource.py",
+                args.master,
+                str(100_000*producers), # number of vectors to produce into topic
+                str(64) # length of each vector
+            ], stdout=subprocess.PIPE)
+            jobs.append(Job("producer", proc))
+        wait_for_jobs(jobs)
 
         print("Populated data for the consumers to consume")
 
@@ -62,23 +81,6 @@ def run_experiment_trials(args) -> None:
 
             ### JOB SUBMISSION
             jobs = []
-            
-            # Launch the data source on each pod
-            # TODO: these should run unbounded, and 
-            # we should determine steady state throughput and data freshness after warmup (everything is running together)
-            if application == "QuestDBClient" or application == "VectorSimDelta":
-                for i in range(producers):
-                    print(f"Submitting Producer Job {i}")
-                    jobs.append(flink.launch_flink_producer_job(args))
-                    time.sleep(1)
-            elif application == "VectorSimKafka": 
-                proc = subprocess.Popen([
-                    "python3.8",
-                    "/local/flink-1.13.2/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/kafka_datasource.py",
-                    args.master,
-                    str(100_000*producers), # number of vectors to produce into topic
-                    str(64) # length of each vector
-                ], stdout=subprocess.PIPE)
 
             # Launch Flink consumers to be scheduled across the cluster by Flink
             for i in range(consumers):
@@ -161,7 +163,7 @@ def main() -> None:
 
     parser.add_argument('producers', type=int, default=1, nargs='?')
     parser.add_argument('consumers', type=int, default=1, nargs='?')
-    parser.add_argument('application', type=str, default="QuestDBClient", nargs='?')
+    parser.add_argument('application', type=str, default="VectorSimKafka", nargs='?')
 
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()

@@ -23,4 +23,4 @@ kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl versio
 sudo apt-get install python3.8-dev
 python -m pip install Cython
 python -m pip install setuptools wheel
-python -m pip install numpy kafka-python
+python -m pip install numpy==1.20 kafka-python
