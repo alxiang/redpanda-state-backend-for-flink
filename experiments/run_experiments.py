@@ -66,7 +66,7 @@ def run_experiment_trials(args) -> None:
             # Launch the data source on each pod
             # TODO: these should run unbounded, and 
             # we should determine steady state throughput and data freshness after warmup (everything is running together)
-            if application == "QuestDBClient":
+            if application == "QuestDBClient" or application == "VectorSimDelta":
                 for i in range(producers):
                     print(f"Submitting Producer Job {i}")
                     jobs.append(flink.launch_flink_producer_job(args))
@@ -79,15 +79,6 @@ def run_experiment_trials(args) -> None:
                     str(100_000*producers), # number of vectors to produce into topic
                     str(64) # length of each vector
                 ], stdout=subprocess.PIPE)
-            # elif application == "VectorSimDelta":
-            #     proc = subprocess.Popen([
-            #         "python3.8",
-            #         "/local/flink-1.13.2/redpanda-state-backend-for-flink/src/python/applications/vector_similarity_search/delta_datasource.py",
-            #         args.master,
-            #         str(100_000*producers), # number of vectors to produce into topic
-            #         str(64) # length of each vector
-            #     ], stdout=subprocess.PIPE)
-            # jobs.append(Job("producer", proc))
 
             # Launch Flink consumers to be scheduled across the cluster by Flink
             for i in range(consumers):
