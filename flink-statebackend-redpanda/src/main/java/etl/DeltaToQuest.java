@@ -93,7 +93,7 @@ public class DeltaToQuest {
                     ps.setLong(2, t.getLong(2));
                     ps.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
                 },
-                JdbcExecutionOptions.builder().build(),
+                JdbcExecutionOptions.builder().build(), // TODO: may want to tune these, e.g. batch size
                 JdbcExactlyOnceOptions.defaults(),
                 () -> {
                     // create a driver-specific XA DataSource
