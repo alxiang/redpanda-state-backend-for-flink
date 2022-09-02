@@ -51,7 +51,7 @@ def main() -> None:
 
         # Keep querying from vectortable until max_index == num_vectors-1    
         max_index = 0
-        retries = 5
+        retries = 20
         while max_index < args.num_vectors-1:
             print(f"{max_index=}")
 
@@ -60,7 +60,7 @@ def main() -> None:
                 cursor.execute(postgreSQL_select_Query)
                 print('Selecting recent rows from test table using cursor.fetchall')
                 records = cursor.fetchall()
-                max_index = max(do_application_logic(target, records, prev_max_ind=max_ind), max_index)
+                max_index = max(do_application_logic(target, records, prev_max_ind=max_index), max_index)
             except Exception as e:
                 retries -= 1
                 time.sleep(5)

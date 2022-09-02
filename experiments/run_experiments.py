@@ -155,6 +155,7 @@ def run_experiment_trials(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument('application', type=str, default="VectorSimKafka", nargs='?')
     parser.add_argument('master', type=str, default="10.10.1.1", nargs="?")
     parser.add_argument('k', type=int, default=1, nargs='?')  # number of runs
     parser.add_argument('checkpointing_interval', type=str,
@@ -163,7 +164,7 @@ def main() -> None:
 
     parser.add_argument('producers', type=int, default=1, nargs='?')
     parser.add_argument('consumers', type=int, default=1, nargs='?')
-    parser.add_argument('application', type=str, default="VectorSimKafka", nargs='?')
+    
 
     parser.add_argument('port', type=str, default="8888", nargs='?')
     args = parser.parse_args()

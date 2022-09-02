@@ -18,7 +18,7 @@ def launch_application_job(args, pod) -> Job:
             f"applications.{args.application}",
         ], stdout=subprocess.PIPE)
 
-    elif args.application == "VectorSimKafka":
+    elif args.application == "VectorSimKafka" or args.application == "VectorSimDelta":
 
         proc = subprocess.Popen([
             "kubectl",
