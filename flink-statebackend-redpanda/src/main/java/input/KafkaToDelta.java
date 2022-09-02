@@ -32,6 +32,7 @@ public class KafkaToDelta {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.getConfig().setParallelism(1);
 		env.disableOperatorChaining();
+        env.enableCheckpointing(100L);
 
         String topic = "Vector";
 

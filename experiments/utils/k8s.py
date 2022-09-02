@@ -97,6 +97,16 @@ def reset_kube_cluster() -> None:
                 '.questdb/db/vectortable.lock'
             ], capture_output=True)
 
+        output = subprocess.run([
+                'kubectl',
+                'exec',
+                task_executor,
+                '--',
+                'rm',
+                '-r',
+                '/tmp/delta'
+            ], capture_output=True)
+                
         # output = subprocess.run([
         #         'kubectl',
         #         'exec',
