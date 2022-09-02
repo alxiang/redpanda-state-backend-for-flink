@@ -6,5 +6,12 @@ public class KafkaRecord {
     public long offset;
     public int partition;
     public String topic;
-    public long timestamp;    
+    public long timestamp;   
+
+    public KafkaRecord(){} 
+    
+    public KafkaRecord(String key_, Long value_){
+        this.key = key_;
+        this.value = value_;
+    }
 }

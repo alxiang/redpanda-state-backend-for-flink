@@ -67,12 +67,7 @@ public class DeltaToQuest {
         .build();
             
         env.fromSource(source, WatermarkStrategy.noWatermarks(), "Delta Source")
-            .flatMap((RowData t, Collector<KafkaRecord> out) -> {
-                KafkaRecord record = new KafkaRecord();
-                record.key = t.getString(0).toString();
-                record.value = t.getLong(1);
-                out.collect(record);
-            })
+            .map(x -> new KafkaRecord(x.getString(0).toString(), x.getLong(1)))
             .flatMap(new QuestDBInsertMap("vectortable", "10.10.1.1"))
             .addSink(new DiscardingSink());
         //     .addSink(JdbcSink.exactlyOnceSink(

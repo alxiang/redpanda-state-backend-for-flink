@@ -33,7 +33,7 @@ def launch_flink_producer_job(args) -> Job:
         "-m",
         f"localhost:{args.port}",
         "-c", 
-        f"input.{BENCHMARK_MAP[args.benchmark]}",
+        f"input.KafkaToDelta",
         f"{ROOTPATH}/flink-statebackend-redpanda/target/flink-statebackend-redpanda-1.13.2-jar-with-dependencies.jar",
         args.master, # master machine address
     ], stdout=subprocess.PIPE)

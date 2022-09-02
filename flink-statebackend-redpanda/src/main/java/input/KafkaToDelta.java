@@ -72,5 +72,7 @@ public class KafkaToDelta {
         env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
             .flatMap(new RowDataFlatMap())
             .sinkTo(deltaSink);
+
+        env.execute("Kafka -> Delta");
     }    
 }
